@@ -39,25 +39,16 @@ public class PathMinimapOverlay extends Overlay {
             return null;
         }
 
-        if (!plugin.currentPath.loading) {
-            List<WorldPoint> pathPoints = plugin.currentPath.getPath();
+        if (plugin.currentPath.isDone()) {
+            List<WorldPoint> pathPoints = plugin.currentPath.getPath().points;
             if (pathPoints != null) {
                 for (WorldPoint pathPoint : pathPoints) {
                     if (pathPoint.getPlane() != client.getPlane()) {
                         continue;
                     }
 
-                    drawOnMinimap(graphics, pathPoint, config.colourPath());
-                }
-            }
-        } else {
-            List<WorldPoint> bestPath = plugin.currentPath.currentBest();
-            if (bestPath != null) {
-                for (WorldPoint pathPoint : bestPath) {
-                    if (pathPoint.getPlane() != client.getPlane()) {
-                        continue;
-                    }
-                    drawOnMinimap(graphics, pathPoint, config.colourPathCalculating());
+                    Color pathColor = (plugin.currentPath.isDone() ? config.colourPath() : config.colourPathCalculating());
+                    drawOnMinimap(graphics, pathPoint, pathColor);
                 }
             }
         }
