@@ -47,7 +47,7 @@ import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.Text;
 import shortestpath.pathfinder.CollisionMap;
-import shortestpath.pathfinder.Pathfinder;
+import shortestpath.pathfinder.PathfinderTask;
 import shortestpath.pathfinder.SplitFlagMap;
 
 @PluginDescriptor(
@@ -91,13 +91,13 @@ public class ShortestPathPlugin extends Plugin {
     @Inject
     private WorldMapOverlay worldMapOverlay;
 
-    public Pathfinder pathfinder;
-    public Pathfinder.Path currentPath;
-
     private Point lastMenuOpenedPoint;
     public WorldMapPoint marker;
     private WorldPoint transportStart;
     private MenuEntry lastClick;
+
+    public PathfinderTask currentPath;
+    private PathfinderTask.PathfinderConfig pathfinderConfig;
 
     @Override
     protected void startUp() {
@@ -138,25 +138,11 @@ public class ShortestPathPlugin extends Plugin {
         }
 
         CollisionMap map = new CollisionMap(64, compressedRegions);
-        pathfinder = new Pathfinder(map, transports);
+        this.pathfinderConfig = new PathfinderTask.PathfinderConfig(map, transports, config.avoidWilderness());
 
         overlayManager.add(pathOverlay);
         overlayManager.add(pathMinimapOverlay);
         overlayManager.add(pathMapOverlay);
-    }
-
-    public boolean isNearPath(WorldPoint location) {
-        if (currentPath == null || currentPath.getPath() == null || currentPath.getPath().isEmpty()) {
-            return true;
-        }
-
-        for (WorldPoint point : currentPath.getPath()) {
-            if (config.recalculateDistance() < 0 || location.distanceTo2D(point) < config.recalculateDistance()) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     @Override
@@ -164,6 +150,20 @@ public class ShortestPathPlugin extends Plugin {
         overlayManager.remove(pathOverlay);
         overlayManager.remove(pathMinimapOverlay);
         overlayManager.remove(pathMapOverlay);
+    }
+
+    public boolean isNearPath(WorldPoint location) {
+        if (currentPath == null || currentPath.getPath() == null || currentPath.getPath().points.isEmpty()) {
+            return true;
+        }
+
+        for (WorldPoint point : currentPath.getPath().points) {
+            if (config.recalculateDistance() < 0 || location.distanceTo2D(point) < config.recalculateDistance()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Subscribe
@@ -190,7 +190,7 @@ public class ShortestPathPlugin extends Plugin {
                 return;
             }
 
-            currentPath = pathfinder.new Path(currentLocation, currentPath.getTarget(), config.avoidWilderness());
+            currentPath = new PathfinderTask(pathfinderConfig, currentLocation, currentPath.getTarget());
         }
     }
 
@@ -210,7 +210,7 @@ public class ShortestPathPlugin extends Plugin {
                 }
                 WorldPoint selectedTile = getSelectedWorldPoint();
                 if (currentPath.getPath() != null) {
-                    for (WorldPoint tile : currentPath.getPath()) {
+                    for (WorldPoint tile : currentPath.getPath().points) {
                         if (tile.equals(selectedTile)) {
                             addMenuEntry(event, CLEAR, PATH, 1);
                             break;
@@ -240,6 +240,14 @@ public class ShortestPathPlugin extends Plugin {
         }
     }
 
+    public Map<WorldPoint, List<WorldPoint>> getTransports() {
+        return this.pathfinderConfig.transports;
+    }
+
+    public CollisionMap getMap() {
+        return this.pathfinderConfig.map;
+    }
+
     private void onMenuOptionClicked(MenuEntry entry) {
         Player localPlayer = client.getLocalPlayer();
         if (localPlayer == null) {
@@ -256,7 +264,7 @@ public class ShortestPathPlugin extends Plugin {
                     currentLocation.getX() + " " + currentLocation.getY() + " " + currentLocation.getPlane() + " " +
                     lastClick.getOption() + " " + Text.removeTags(lastClick.getTarget()) + " " + lastClick.getIdentifier()
             );
-            pathfinder.transports.computeIfAbsent(transportStart, k -> new ArrayList<>()).add(currentLocation);
+            pathfinderConfig.transports.computeIfAbsent(transportStart, k -> new ArrayList<>()).add(currentLocation);
         }
 
         if (entry.getOption().equals("Copy Position")) {
@@ -271,7 +279,7 @@ public class ShortestPathPlugin extends Plugin {
         }
 
         if (entry.getOption().equals(SET) && entry.getTarget().equals(START)) {
-            currentPath = pathfinder.new Path(getSelectedWorldPoint(), currentPath.getTarget(), config.avoidWilderness());
+            currentPath = new PathfinderTask(pathfinderConfig, getSelectedWorldPoint(), currentPath.getTarget());
         }
 
         if (entry.getOption().equals(CLEAR) && entry.getTarget().equals(PATH)) {
@@ -313,7 +321,7 @@ public class ShortestPathPlugin extends Plugin {
             marker.setJumpOnClick(true);
             worldMapPointManager.add(marker);
             WorldPoint start = currentPath != null ? currentPath.getStart() : localPlayer.getWorldLocation();
-            currentPath = pathfinder.new Path(start, target, config.avoidWilderness());
+            currentPath = new PathfinderTask(pathfinderConfig, start, target);
         }
     }
 
