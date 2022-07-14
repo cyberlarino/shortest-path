@@ -96,8 +96,6 @@ public class PathfinderTask implements Runnable {
     public void run() {
         boundary.add(new Node(start, null));
 
-        System.out.println("Yep, running!");
-
         int bestDistance = Integer.MAX_VALUE;
         while (!boundary.isEmpty()) {
             Node node = boundary.remove(0);
@@ -116,7 +114,6 @@ public class PathfinderTask implements Runnable {
             addNeighbors(node);
         }
 
-        System.out.println("Got through. Path size: " + this.path.points.size());
         this.done = true;
     }
 }
