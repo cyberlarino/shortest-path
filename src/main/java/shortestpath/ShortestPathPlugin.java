@@ -2,27 +2,6 @@ package shortestpath;
 
 import com.google.inject.Inject;
 import com.google.inject.Provides;
-import java.awt.Color;
-import java.awt.Polygon;
-import java.awt.Rectangle;
-import java.awt.Shape;
-import java.awt.Toolkit;
-import java.awt.datatransfer.StringSelection;
-import java.awt.geom.Ellipse2D;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 import net.runelite.api.Client;
 import net.runelite.api.KeyCode;
 import net.runelite.api.MenuAction;
@@ -55,7 +34,20 @@ import net.runelite.client.util.Text;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.PathfinderTask;
-import shortestpath.pathfinder.SplitFlagMap;
+
+import java.awt.Color;
+import java.awt.Polygon;
+import java.awt.Rectangle;
+import java.awt.Shape;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
+import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 @PluginDescriptor(
     name = "Shortest Path",
@@ -117,42 +109,8 @@ public class ShortestPathPlugin extends Plugin {
 
     @Override
     protected void startUp() {
-        Map<SplitFlagMap.Position, byte[]> compressedRegions = new HashMap<>();
-        HashMap<WorldPoint, List<Transport>> transports = new HashMap<>();
-
-        try (ZipInputStream in = new ZipInputStream(ShortestPathPlugin.class.getResourceAsStream("/collision-map.zip"))) {
-            ZipEntry entry;
-            while ((entry = in.getNextEntry()) != null) {
-                String[] n = entry.getName().split("_");
-
-                compressedRegions.put(
-                        new SplitFlagMap.Position(Integer.parseInt(n[0]), Integer.parseInt(n[1])),
-                        Util.readAllBytes(in)
-                );
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-
-        try {
-            String s = new String(Util.readAllBytes(ShortestPathPlugin.class.getResourceAsStream("/transports.txt")), StandardCharsets.UTF_8);
-            Scanner scanner = new Scanner(s);
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-
-                if (line.startsWith("#") || line.isEmpty()) {
-                    continue;
-                }
-
-                Transport transport = new Transport(line);
-                WorldPoint origin = transport.getOrigin();
-                transports.computeIfAbsent(origin, k -> new ArrayList<>()).add(transport);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        CollisionMap map = new CollisionMap(64, compressedRegions);
+        final CollisionMap map = CollisionMap.fromFile("src/main/resources/collision-map.zip");
+        final Map<WorldPoint, List<Transport>> transports = Transport.fromFile("src/main/resources/transports.txt");
         this.pathfinderConfig = new PathfinderConfig(map, transports);
 
         overlayManager.add(pathOverlay);

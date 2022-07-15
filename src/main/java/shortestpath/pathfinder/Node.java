@@ -1,15 +1,18 @@
 package shortestpath.pathfinder;
 
+import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.Path;
 
 import java.util.LinkedList;
 
 public class Node {
-    public final WorldPoint position;
-    public final Node previous;
+    @Getter
+    private final WorldPoint position;
+    @Getter
+    private final Node previous;
 
-    public Node(WorldPoint position, Node previous) {
+    public Node(final WorldPoint position, final Node previous) {
         this.position = position;
         this.previous = previous;
     }

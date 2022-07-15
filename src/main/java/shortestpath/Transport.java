@@ -3,6 +3,16 @@ package shortestpath;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
 /**
  * This class represents a travel point between two WorldPoints.
  */
@@ -77,5 +87,28 @@ public class Transport {
 
     Transport(final WorldPoint origin, final WorldPoint destination) {
         this(origin, destination, 0, 0, 0);
+    }
+
+    public static Map<WorldPoint, List<Transport>> fromFile(final String filepath) {
+        HashMap<WorldPoint, List<Transport>> transports = new HashMap<>();
+        try {
+            Path path = Paths.get(filepath);
+            String s = Files.readString(path);
+            Scanner scanner = new Scanner(s);
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+
+                if (line.startsWith("#") || line.isEmpty()) {
+                    continue;
+                }
+
+                Transport transport = new Transport(line);
+                WorldPoint origin = transport.getOrigin();
+                transports.computeIfAbsent(origin, k -> new ArrayList<>()).add(transport);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return transports;
     }
 }

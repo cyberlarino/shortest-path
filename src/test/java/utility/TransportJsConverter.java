@@ -1,4 +1,4 @@
-package pathfinder;
+package utility;
 
 import java.io.IOException;
 import java.nio.file.Files;

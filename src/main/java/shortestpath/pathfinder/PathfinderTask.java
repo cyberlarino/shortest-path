@@ -57,12 +57,12 @@ public class PathfinderTask implements Runnable {
             final int indexToEvaluate = 0;
             final Node node = graph.getBoundary().get(indexToEvaluate);
 
-            if (node.position.equals(target)) {
+            if (node.getPosition().equals(target)) {
                 this.path = node.getPath();
                 break;
             }
 
-            int distance = node.position.distanceTo(target);
+            int distance = node.getPosition().distanceTo(target);
             if (this.path == null || distance < bestDistance) {
                 this.path = node.getPath();
                 bestDistance = distance;
