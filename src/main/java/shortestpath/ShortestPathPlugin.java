@@ -53,6 +53,7 @@ import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.Text;
 import shortestpath.pathfinder.CollisionMap;
+import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.PathfinderTask;
 import shortestpath.pathfinder.SplitFlagMap;
 
@@ -111,7 +112,7 @@ public class ShortestPathPlugin extends Plugin {
     private Rectangle lastMinimapRectangle = new Rectangle(-1, -1, 0, 0);
 
     public PathfinderTask currentPath;
-    private PathfinderTask.PathfinderConfig pathfinderConfig;
+    private PathfinderConfig pathfinderConfig;
     private boolean startPointSet = false;
 
     @Override
@@ -152,7 +153,7 @@ public class ShortestPathPlugin extends Plugin {
         }
 
         CollisionMap map = new CollisionMap(64, compressedRegions);
-        this.pathfinderConfig = new PathfinderTask.PathfinderConfig(map, transports);
+        this.pathfinderConfig = new PathfinderConfig(map, transports);
 
         overlayManager.add(pathOverlay);
         overlayManager.add(pathMinimapOverlay);
@@ -253,7 +254,7 @@ public class ShortestPathPlugin extends Plugin {
         }
     }
 
-    public PathfinderTask.PathfinderConfig getPathfinderConfig() {
+    public PathfinderConfig getPathfinderConfig() {
         pathfinderConfig.avoidWilderness = config.avoidWilderness();
         pathfinderConfig.useAgilityShortcuts = config.useAgilityShortcuts();
         pathfinderConfig.useGrappleShortcuts = config.useGrappleShortcuts();
