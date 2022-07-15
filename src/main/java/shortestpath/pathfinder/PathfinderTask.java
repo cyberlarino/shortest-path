@@ -6,6 +6,7 @@ import lombok.Getter;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.Path;
+import shortestpath.Transport;
 
 public class PathfinderTask implements Runnable {
     private static final WorldArea WILDERNESS_ABOVE_GROUND = new WorldArea(2944, 3523, 448, 448, 0);
@@ -26,6 +27,7 @@ public class PathfinderTask implements Runnable {
 
     private final PathfinderConfig config;
     private final Predicate<WorldPoint> neighborPredicate;
+    private final Predicate<Transport> transportPredicate;
 
     public PathfinderTask(PathfinderConfig config, WorldPoint start, WorldPoint target) {
         this.config = config;
@@ -39,6 +41,8 @@ public class PathfinderTask implements Runnable {
             }
             return true;
         };
+        this.transportPredicate = config.getCanPlayerUseTransportPredicate();
+
 
         new Thread(this).start();
     }
@@ -64,7 +68,7 @@ public class PathfinderTask implements Runnable {
                 bestDistance = distance;
             }
 
-            graph.evaluateBoundaryNode(indexToEvaluate, this.neighborPredicate);
+            graph.evaluateBoundaryNode(indexToEvaluate, this.neighborPredicate, this.transportPredicate);
         }
 
         this.isDone = true;

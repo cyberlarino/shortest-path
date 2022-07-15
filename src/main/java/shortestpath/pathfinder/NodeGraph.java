@@ -1,10 +1,16 @@
 package shortestpath.pathfinder;
 
 import lombok.Getter;
+import net.runelite.api.World;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.Transport;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 
 public class NodeGraph {
@@ -29,29 +35,35 @@ public class NodeGraph {
     }
 
     public void evaluateBoundaryNode(final int index, final Predicate<WorldPoint> predicate) {
-        final Node node = boundary.remove(index);
-        addNeighbors(node, predicate);
+        evaluateBoundaryNode(index, x -> true, x -> true);
     }
 
-    private void addNeighbor(final Node node, final WorldPoint neighbor, final Predicate<WorldPoint> predicate) {
-        if (!predicate.test(neighbor)) {
-            return;
-        }
+    public void evaluateBoundaryNode(final int index, final Predicate<WorldPoint> neighborPredicate, final Predicate<Transport> transportPredicate) {
+        final Node node = boundary.remove(index);
+        addNeighbors(node, neighborPredicate, transportPredicate);
+    }
+
+    private void addNeighbor(final Node node, final WorldPoint neighbor) {
         if (!visited.add(neighbor)) {
             return;
         }
         boundary.add(new Node(neighbor, node));
     }
 
-    private void addNeighbors(final Node node, final Predicate<WorldPoint> predicate) {
+    private void addNeighbors(final Node node, final Predicate<WorldPoint> neighborPredicate, final Predicate<Transport> transportPredicate) {
         for (OrdinalDirection direction : OrdinalDirection.values()) {
             if (map.checkDirection(node.position.getX(), node.position.getY(), node.position.getPlane(), direction)) {
-                addNeighbor(node, new WorldPoint(node.position.getX() + direction.toPoint().x, node.position.getY() + direction.toPoint().y, node.position.getPlane()), predicate);
+                final WorldPoint neighbor = new WorldPoint(node.position.getX() + direction.toPoint().x, node.position.getY() + direction.toPoint().y, node.position.getPlane());
+                if (neighborPredicate.test(neighbor)) {
+                    addNeighbor(node, neighbor);
+                }
             }
         }
 
         for (Transport transport : transports.getOrDefault(node.position, new ArrayList<>())) {
-            addNeighbor(node, transport.getDestination(), predicate);
+            if (transportPredicate.test(transport)) {
+                addNeighbor(node, transport.getDestination());
+            }
         }
     }
 }
