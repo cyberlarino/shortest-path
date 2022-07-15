@@ -6,7 +6,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
+import com.sun.org.apache.xpath.internal.axes.OneStepIterator;
+import lombok.Getter;
+import net.runelite.api.World;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.Path;
@@ -16,13 +20,14 @@ public class PathfinderTask implements Runnable {
     private static final WorldArea WILDERNESS_ABOVE_GROUND = new WorldArea(2944, 3523, 448, 448, 0);
     private static final WorldArea WILDERNESS_UNDERGROUND = new WorldArea(2944, 9918, 320, 442, 0);
 
+    @Getter
     private final WorldPoint start;
+    @Getter
     private final WorldPoint target;
     private final PathfinderConfig config;
+    private final Predicate<WorldPoint> neighborPredicate;
 
-    private List<Node> boundary = new LinkedList<>();
-    private Set<WorldPoint> visited = new HashSet<>();
-
+    @Getter
     private Path path;
     private boolean done = false;
 
@@ -30,6 +35,14 @@ public class PathfinderTask implements Runnable {
         this.config = config;
         this.start = start;
         this.target = target;
+
+        final boolean isStartOrTargetInWilderness = isInWilderness(start) || isInWilderness(target);
+        this.neighborPredicate = (point) -> {
+                if (config.avoidWilderness && !isStartOrTargetInWilderness && isInWilderness(point)) {
+                    return false;
+                }
+                return true;
+        };
 
         new Thread(this).start();
     }
@@ -75,35 +88,15 @@ public class PathfinderTask implements Runnable {
         return this.path;
     }
 
-    private void addNeighbor(Node node, WorldPoint neighbor) {
-        if (config.avoidWilderness && isInWilderness(neighbor) && !isInWilderness(node.position) && !isInWilderness(target)) {
-            return;
-        }
-        if (!visited.add(neighbor)) {
-            return;
-        }
-        boundary.add(new Node(neighbor, node));
-    }
-
-    private void addNeighbors(Node node) {
-        for (OrdinalDirection direction : OrdinalDirection.values()) {
-            if (config.map.checkDirection(node.position.getX(), node.position.getY(), node.position.getPlane(), direction)) {
-                addNeighbor(node, new WorldPoint(node.position.getX() + direction.toPoint().x, node.position.getY() + direction.toPoint().y, node.position.getPlane()));
-            }
-        }
-
-        for (Transport transport : config.transports.getOrDefault(node.position, new ArrayList<>())) {
-            addNeighbor(node, transport.getDestination());
-        }
-    }
-
     @Override
     public void run() {
-        boundary.add(new Node(start, null));
+        NodeGraph graph = new NodeGraph(config.map, config.transports);
+        graph.addBoundaryNode(new Node(start, null));
 
         int bestDistance = Integer.MAX_VALUE;
-        while (!boundary.isEmpty()) {
-            Node node = boundary.remove(0);
+        while (!graph.getBoundary().isEmpty()) {
+            final int indexToEvaluate = 0;
+            final Node node = graph.getBoundary().get(indexToEvaluate);
 
             if (node.position.equals(target)) {
                 this.path = node.getPath();
@@ -116,7 +109,7 @@ public class PathfinderTask implements Runnable {
                 bestDistance = distance;
             }
 
-            addNeighbors(node);
+            graph.evaluateBoundaryNode(indexToEvaluate, this.neighborPredicate);
         }
 
         this.done = true;
