@@ -4,6 +4,7 @@ import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -93,7 +94,8 @@ public class Transport {
         HashMap<WorldPoint, List<Transport>> transports = new HashMap<>();
         try {
             Path path = Paths.get(filepath);
-            String s = Files.readString(path);
+            byte[] encoded = Files.readAllBytes(path);
+            String s = new String(encoded, StandardCharsets.UTF_8);
             Scanner scanner = new Scanner(s);
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();

@@ -27,5 +27,6 @@ public class NodeTest {
         Path path = node3.getPath();
         Assert.assertEquals(path.getPoints().get(0), node0.getPosition());
         Assert.assertEquals(path.getPoints().get(points.size() - 1), node3.getPosition());
+        Assert.assertEquals(path.getPoints().size(), points.size());
     }
 }

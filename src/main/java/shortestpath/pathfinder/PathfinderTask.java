@@ -43,7 +43,6 @@ public class PathfinderTask implements Runnable {
         };
         this.transportPredicate = config.getCanPlayerUseTransportPredicate();
 
-
         new Thread(this).start();
     }
 
