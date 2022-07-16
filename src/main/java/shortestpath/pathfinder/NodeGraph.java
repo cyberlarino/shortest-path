@@ -1,7 +1,6 @@
 package shortestpath.pathfinder;
 
 import lombok.Getter;
-import net.runelite.api.World;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.Transport;
 
@@ -52,7 +51,7 @@ public class NodeGraph {
 
     private void addNeighbors(final Node node, final Predicate<WorldPoint> neighborPredicate, final Predicate<Transport> transportPredicate) {
         for (OrdinalDirection direction : OrdinalDirection.values()) {
-            if (map.checkDirection(node.getPosition().getX(), node.getPosition().getY(), node.getPosition().getPlane(), direction)) {
+            if (map.checkDirection(node.getPosition(), direction)) {
                 final WorldPoint neighbor = new WorldPoint(node.getPosition().getX() + direction.toPoint().x, node.getPosition().getY() + direction.toPoint().y, node.getPosition().getPlane());
                 if (neighborPredicate.test(neighbor)) {
                     addNeighbor(node, neighbor);

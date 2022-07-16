@@ -1,5 +1,6 @@
 package shortestpath.pathfinder;
 
+import net.runelite.api.coords.WorldPoint;
 import shortestpath.ShortestPathPlugin;
 import shortestpath.Util;
 
@@ -18,12 +19,28 @@ public class CollisionMap extends SplitFlagMap {
         super(regionSize, compressedRegions, 2);
     }
 
-    public boolean check(int x, int y, int z) {
+    public boolean check(final WorldPoint point) {
+        return check(point.getX(), point.getY(), point.getPlane());
+    }
+
+    public boolean check(final int x, final int y, final int z) {
         return get(x, y, z, 0);
     }
 
-    public boolean checkDirection(int x, int y, int z, OrdinalDirection dir) {
+    public boolean checkDirection(final WorldPoint point, final OrdinalDirection dir) {
+        return checkDirection(point.getX(), point.getY(), point.getPlane(), dir);
+    }
+
+    public boolean checkDirection(final int x, final int y, final int z, final OrdinalDirection dir) {
         Point direction = dir.toPoint();
+        if (Math.abs(direction.x) + Math.abs(direction.y) > 1) {
+            // Diagonal cases
+            final boolean horizontalPossible = check(x + direction.x, y, z);
+            final boolean verticalPossible = check(x, y + direction.y, z);
+            if (!horizontalPossible && !verticalPossible) {
+                return false;
+            }
+        }
         return check(x + direction.x, y + direction.y, z);
     }
 

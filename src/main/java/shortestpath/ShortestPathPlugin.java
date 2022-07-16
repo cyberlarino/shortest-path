@@ -162,7 +162,7 @@ public class ShortestPathPlugin extends Plugin {
                 setTarget(null);
                 return;
             }
-            currentPath = new PathfinderTask(pathfinderConfig, currentLocation, currentPath.getTarget());
+            currentPath = new PathfinderTask(getPathfinderConfig(), currentLocation, currentPath.getTarget());
         }
     }
 
@@ -214,6 +214,7 @@ public class ShortestPathPlugin extends Plugin {
 
     public PathfinderConfig getPathfinderConfig() {
         pathfinderConfig.avoidWilderness = config.avoidWilderness();
+        pathfinderConfig.useTransports = true;
         pathfinderConfig.useAgilityShortcuts = config.useAgilityShortcuts();
         pathfinderConfig.useGrappleShortcuts = config.useGrappleShortcuts();
         pathfinderConfig.agilityLevel = client.getBoostedSkillLevel(Skill.AGILITY);
@@ -310,7 +311,7 @@ public class ShortestPathPlugin extends Plugin {
             if (startPointSet && currentPath != null) {
                 start = currentPath.getStart();
             }
-            currentPath = new PathfinderTask(pathfinderConfig, start, target);
+            currentPath = new PathfinderTask(getPathfinderConfig(), start, target);
         }
     }
 
@@ -319,7 +320,7 @@ public class ShortestPathPlugin extends Plugin {
             return;
         }
         startPointSet = true;
-        currentPath = new PathfinderTask(pathfinderConfig, start, currentPath.getTarget());
+        currentPath = new PathfinderTask(getPathfinderConfig(), start, currentPath.getTarget());
     }
 
     public WorldPoint calculateMapPoint(Point point) {
@@ -396,7 +397,7 @@ public class ShortestPathPlugin extends Plugin {
 
     private Widget getMinimapDrawWidget() {
         if (client.isResized()) {
-            if (client.getVar(Varbits.SIDE_PANELS) == 1) {
+            if (client.getVarbitValue(Varbits.SIDE_PANELS) == 1) {
                 return client.getWidget(WidgetInfo.RESIZABLE_MINIMAP_DRAW_AREA);
             }
             return client.getWidget(WidgetInfo.RESIZABLE_MINIMAP_STONES_DRAW_AREA);

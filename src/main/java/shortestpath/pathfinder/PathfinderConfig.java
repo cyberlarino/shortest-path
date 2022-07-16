@@ -12,7 +12,7 @@ public class PathfinderConfig {
     public Map<WorldPoint, List<Transport>> transports;
     public boolean avoidWilderness = true;
     public boolean useTransports = true;
-    public boolean useAgilityShortcuts = false;
+    public boolean useAgilityShortcuts = true;
     public boolean useGrappleShortcuts = false;
     public int agilityLevel = 1;
     public int rangedLevel = 1;
@@ -36,27 +36,26 @@ public class PathfinderConfig {
         final boolean isAgilityShortcut = transportAgilityLevel > 1;
         final boolean isGrappleShortcut = isAgilityShortcut && (transportRangedLevel > 1 || transportStrengthLevel > 1);
 
-        if (!isAgilityShortcut) {
-            return true;
-        }
-
-        if (!useAgilityShortcuts) {
+        if (isAgilityShortcut && !useAgilityShortcuts) {
             return false;
         }
 
-        if (!useGrappleShortcuts && isGrappleShortcut) {
+        if (isGrappleShortcut && !useGrappleShortcuts) {
             return false;
         }
 
-        if (useGrappleShortcuts && isGrappleShortcut && agilityLevel >= transportAgilityLevel &&
-                rangedLevel >= transportRangedLevel && strengthLevel >= transportStrengthLevel) {
-            return true;
+        if (isGrappleShortcut && useGrappleShortcuts) {
+            if (agilityLevel >= transportAgilityLevel &&
+                    rangedLevel >= transportRangedLevel && strengthLevel >= transportStrengthLevel) {
+                return true;
+            }
+            return false;
         }
 
         return agilityLevel >= transportAgilityLevel;
     }
 
     public Predicate<Transport> getCanPlayerUseTransportPredicate() {
-        return (transport) -> (canPlayerUseTransport(transport));
+        return this::canPlayerUseTransport;
     }
 }
