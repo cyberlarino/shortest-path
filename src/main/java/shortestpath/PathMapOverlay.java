@@ -61,10 +61,7 @@ public class PathMapOverlay extends Overlay {
             final int z = client.getPlane();
             for (int x = extent.x; x < (extent.x + extent.width + 1); x++) {
                 for (int y = extent.y - extent.height; y < (extent.y + 1); y++) {
-                    final int finalX = x;
-                    final int finalY = y;
-                    final boolean isBlocked = Stream.of(OrdinalDirection.values()).noneMatch(dir -> plugin.getMap().checkDirection(finalX, finalY, z, dir));
-                    if (isBlocked) {
+                    if (plugin.getMap().isBlocked(x, y, z)) {
                         drawOnMap(graphics, new WorldPoint(x, y, z));
                     }
                 }

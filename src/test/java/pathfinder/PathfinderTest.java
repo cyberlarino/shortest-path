@@ -7,6 +7,7 @@ import org.junit.Test;
 import shortestpath.Path;
 import shortestpath.Transport;
 import shortestpath.pathfinder.CollisionMap;
+import shortestpath.pathfinder.Node;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.PathfinderTask;
 
@@ -22,16 +23,17 @@ public class PathfinderTest {
 
     private final CollisionMap map;
     private final Map<WorldPoint, List<Transport>> transports;
-    private static final List<WorldPoint> varrockSteppingStoneShortcutPoints = new ArrayList<WorldPoint>() {{
-        new WorldPoint(3150, 3363, 0);
-        new WorldPoint(3151, 3363, 0);
-        new WorldPoint(3152, 3363, 0);
-        new WorldPoint(3153, 3363, 0);
-    }};
+    private final List<WorldPoint> varrockSteppingStoneShortcutPoints;
 
     public PathfinderTest() {
         this.map = CollisionMap.fromFile("src/main/resources/collision-map.zip");
         this.transports = Transport.fromFile("src/main/resources/transports.txt");
+
+        this.varrockSteppingStoneShortcutPoints = new ArrayList<>();
+        this.varrockSteppingStoneShortcutPoints.add(new WorldPoint(3150, 3363, 0));
+        this.varrockSteppingStoneShortcutPoints.add(new WorldPoint(3151, 3363, 0));
+        this.varrockSteppingStoneShortcutPoints.add(new WorldPoint(3152, 3363, 0));
+        this.varrockSteppingStoneShortcutPoints.add(new WorldPoint(3153, 3363, 0));
     }
 
     private static boolean waitForPathfinderTaskCompletion(final PathfinderTask task) {
@@ -50,8 +52,8 @@ public class PathfinderTest {
     }
 
     private boolean isPathValid(final Path path) {
-        final Predicate<WorldPoint> pointOnMapOrTransport = worldPoint -> {
-            if (map.check(worldPoint)) {
+        final Predicate<WorldPoint> pointTransportOrNotBlocked = worldPoint -> {
+            if (!map.isBlocked(worldPoint)) {
                 return true;
             }
 
@@ -61,7 +63,7 @@ public class PathfinderTest {
             return false;
         };
 
-        if (!path.getPoints().stream().allMatch(pointOnMapOrTransport)) {
+        if (!path.getPoints().stream().allMatch(pointTransportOrNotBlocked)) {
             return false;
         }
 
@@ -86,8 +88,20 @@ public class PathfinderTest {
         return true;
     }
 
+    private boolean varrockSteppingStoneShortcutInPath(final Path path) {
+        return this.varrockSteppingStoneShortcutPoints.stream().anyMatch(shortcutPoint -> {
+            for (WorldPoint point : path.getPoints()) {
+                if (point.equals(shortcutPoint)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+
     @Test
     public void testStraightPath() {
+        // Test if a single straight generated path is traversable
         final PathfinderConfig config = new PathfinderConfig(map, transports);
 
         final WorldPoint start = new WorldPoint(3171, 3383, 0);
@@ -104,7 +118,20 @@ public class PathfinderTest {
     }
 
     @Test
+    public void testInvalidPath() {
+        // Test if 'isPathValid' detects not traversable path
+        final WorldPoint start = new WorldPoint(3171, 3383, 0);
+        final WorldPoint target = new WorldPoint(3171, 3404, 0);
+        Node startNode = new Node(start, null);
+        Node targetNode = new Node(target, startNode);
+
+        Path path = targetNode.getPath();
+        Assert.assertFalse(isPathValid(path));
+    }
+
+    @Test
     public void testShortcut_NotMeetingRequirements() {
+        // Test that the Varrock stepping stone shortcut isn't used, if required level isn't met
         final PathfinderConfig config = new PathfinderConfig(map, transports);
         config.useTransports = true;
         config.useAgilityShortcuts = true;
@@ -122,14 +149,12 @@ public class PathfinderTest {
         Assert.assertEquals(path.getPoints().get(path.getPoints().size() - 1), target);
         Assert.assertTrue(isPathValid(path));
 
-        final boolean varrockSteppingStoneShortcutInPath = varrockSteppingStoneShortcutPoints.stream().anyMatch(worldPoint -> {
-            return path.getPoints().contains(worldPoint);
-        });
-        Assert.assertTrue(!varrockSteppingStoneShortcutInPath);
+        Assert.assertFalse(varrockSteppingStoneShortcutInPath(path));
     }
 
     @Test
     public void testShortcut_MeetingRequirements() {
+        // Test that the Varrock stepping stone shortcut is used when required level met
         final PathfinderConfig config = new PathfinderConfig(map, transports);
         config.useTransports = true;
         config.useAgilityShortcuts = true;
@@ -147,9 +172,6 @@ public class PathfinderTest {
         Assert.assertEquals(path.getPoints().get(path.getPoints().size() - 1), target);
         Assert.assertTrue(isPathValid(path));
 
-        final boolean varrockSteppingStoneShortcutInPath = varrockSteppingStoneShortcutPoints.stream().anyMatch(worldPoint -> {
-            return path.getPoints().contains(worldPoint);
-        });
-        Assert.assertTrue(varrockSteppingStoneShortcutInPath);
+        Assert.assertTrue(varrockSteppingStoneShortcutInPath(path));
     }
 }

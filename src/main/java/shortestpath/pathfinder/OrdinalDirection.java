@@ -45,4 +45,25 @@ public enum OrdinalDirection {
     };
 
     public abstract Point toPoint();
+
+    public static OrdinalDirection fromPoint(final Point point) {
+        if (point.equals(new Point(0, 1))) {
+            return OrdinalDirection.NORTH;
+        } else if (point.equals(new Point(1, 0))) {
+            return OrdinalDirection.EAST;
+        } else if (point.equals(new Point(0, -1))) {
+            return OrdinalDirection.SOUTH;
+        } else if (point.equals(new Point(-1, 0))) {
+            return OrdinalDirection.WEST;
+        } else if (point.equals(new Point(-1, 1))) {
+            return OrdinalDirection.NORTH_WEST;
+        } else if (point.equals(new Point(1, 1))) {
+            return OrdinalDirection.NORTH_EAST;
+        } else if (point.equals(new Point(1, -1))) {
+            return OrdinalDirection.SOUTH_EAST;
+        } else if (point.equals(new Point(-1, -1))) {
+            return OrdinalDirection.SOUTH_WEST;
+        }
+        return null;
+    }
 }
