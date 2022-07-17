@@ -3,11 +3,14 @@ package shortestpath.pathfinder;
 import java.util.function.Predicate;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.Path;
 import shortestpath.Transport;
+import shortestpath.Util;
 
+@Slf4j
 public class PathfinderTask implements Runnable {
     private static final WorldArea WILDERNESS_ABOVE_GROUND = new WorldArea(2944, 3523, 448, 448, 0);
     private static final WorldArea WILDERNESS_UNDERGROUND = new WorldArea(2944, 9918, 320, 442, 0);
@@ -43,6 +46,7 @@ public class PathfinderTask implements Runnable {
         };
         this.transportPredicate = config.getCanPlayerUseTransportPredicate();
 
+        log.debug("New PathfinderTask started: " + Util.worldPointToString(start) + " to " + Util.worldPointToString(target));
         new Thread(this).start();
     }
 
