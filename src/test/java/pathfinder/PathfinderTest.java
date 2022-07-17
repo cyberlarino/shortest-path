@@ -122,7 +122,7 @@ public class PathfinderTest {
         Path path = task.getPath();
         Assert.assertEquals(path.getPoints().get(0), start);
         Assert.assertEquals(path.getPoints().get(path.getPoints().size() - 1), target);
-        Assert.assertTrue(!isPathValid(path));
+        Assert.assertTrue(isPathValid(path));
     }
 
     @Test
