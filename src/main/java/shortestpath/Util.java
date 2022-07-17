@@ -1,5 +1,7 @@
 package shortestpath;
 
+import net.runelite.api.coords.WorldPoint;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,5 +27,9 @@ public class Util {
             Thread.sleep(time);
         } catch (InterruptedException ignored) {
         }
+    }
+
+    public static String worldPointToString(final WorldPoint point) {
+        return String.format("WorldPoint(%d, %d, %d)", point.getX(), point.getY(), point.getPlane());
     }
 }

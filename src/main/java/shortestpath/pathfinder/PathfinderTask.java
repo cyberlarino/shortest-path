@@ -1,119 +1,81 @@
 package shortestpath.pathfinder;
 
-import java.util.*;
+import java.util.function.Predicate;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.Path;
+import shortestpath.Transport;
+import shortestpath.Util;
 
+@Slf4j
 public class PathfinderTask implements Runnable {
     private static final WorldArea WILDERNESS_ABOVE_GROUND = new WorldArea(2944, 3523, 448, 448, 0);
     private static final WorldArea WILDERNESS_UNDERGROUND = new WorldArea(2944, 9918, 320, 442, 0);
 
+    private static boolean isInWilderness(WorldPoint p) {
+        return WILDERNESS_ABOVE_GROUND.distanceTo(p) == 0 || WILDERNESS_UNDERGROUND.distanceTo(p) == 0;
+    }
+
+    @Getter
     private final WorldPoint start;
+    @Getter
     private final WorldPoint target;
-    private final PathfinderConfig config;
-
-    private List<Node> boundary = new LinkedList<>();
-    private Set<WorldPoint> visited = new HashSet<>();
-
+    @Getter
     private Path path;
-    private boolean done = false;
+    @Getter
+    private boolean isDone = false;
+
+    private final PathfinderConfig config;
+    private final Predicate<WorldPoint> neighborPredicate;
+    private final Predicate<Transport> transportPredicate;
 
     public PathfinderTask(PathfinderConfig config, WorldPoint start, WorldPoint target) {
         this.config = config;
         this.start = start;
         this.target = target;
 
-        new Thread(this).start();
-    }
-
-    public static class PathfinderConfig {
-        public CollisionMap map;
-        public Map<WorldPoint, List<WorldPoint>> transports;
-        public boolean avoidWilderness;
-
-        public PathfinderConfig(CollisionMap map) {
-            this.map = map;
-            this.transports = null;
-        }
-
-        public PathfinderConfig(CollisionMap map, Map<WorldPoint, List<WorldPoint>> transports) {
-            this.map = map;
-            this.transports = transports;
-        }
-
-        public PathfinderConfig(CollisionMap map, Map<WorldPoint, List<WorldPoint>> transports, boolean avoidWilderness) {
-            this.map = map;
-            this.transports = transports;
-            this.avoidWilderness = avoidWilderness;
-        }
-    }
-
-    private static boolean isInWilderness(WorldPoint p) {
-        return WILDERNESS_ABOVE_GROUND.distanceTo(p) == 0 || WILDERNESS_UNDERGROUND.distanceTo(p) == 0;
-    }
-
-    public boolean isDone() {
-        return this.done;
-    }
-
-    public WorldPoint getStart() {
-        return this.start;
-    }
-
-    public WorldPoint getTarget() {
-        return this.target;
-    }
-
-    public Path getPath() {
-        return this.path;
-    }
-
-    private void addNeighbor(Node node, WorldPoint neighbor) {
-        if (config.avoidWilderness && isInWilderness(neighbor) && !isInWilderness(node.position) && !isInWilderness(target)) {
-            return;
-        }
-        if (!visited.add(neighbor)) {
-            return;
-        }
-        boundary.add(new Node(neighbor, node));
-    }
-
-    private void addNeighbors(Node node) {
-        for (OrdinalDirection direction : OrdinalDirection.values()) {
-            if (config.map.checkDirection(node.position.getX(), node.position.getY(), node.position.getPlane(), direction)) {
-                addNeighbor(node, new WorldPoint(node.position.getX() + direction.toPoint().x, node.position.getY() + direction.toPoint().y, node.position.getPlane()));
+        final boolean isStartOrTargetInWilderness = isInWilderness(start) || isInWilderness(target);
+        this.neighborPredicate = (point) -> {
+            if (config.avoidWilderness && !isStartOrTargetInWilderness && isInWilderness(point)) {
+                return false;
             }
-        }
+            return true;
+        };
+        this.transportPredicate = config.getCanPlayerUseTransportPredicate();
 
-        for (WorldPoint transport : config.transports.getOrDefault(node.position, new ArrayList<>())) {
-            addNeighbor(node, transport);
-        }
+        log.debug("New PathfinderTask started: " + Util.worldPointToString(start) + " to " + Util.worldPointToString(target));
+        new Thread(this).start();
     }
 
     @Override
     public void run() {
-        boundary.add(new Node(start, null));
+
+        NodeGraph graph = new NodeGraph(config.map, config.transports);
+        graph.addBoundaryNode(new Node(start, null));
 
         int bestDistance = Integer.MAX_VALUE;
-        while (!boundary.isEmpty()) {
-            Node node = boundary.remove(0);
+        while (!graph.getBoundary().isEmpty()) {
+            final int indexToEvaluate = 0;
+            final Node node = graph.getBoundary().get(indexToEvaluate);
 
-            if (node.position.equals(target)) {
+            if (node.getPosition().equals(target)) {
+
                 this.path = node.getPath();
                 break;
             }
 
-            int distance = node.position.distanceTo(target);
+            int distance = node.getPosition().distanceTo(target);
             if (this.path == null || distance < bestDistance) {
                 this.path = node.getPath();
                 bestDistance = distance;
             }
 
-            addNeighbors(node);
+            graph.evaluateBoundaryNode(indexToEvaluate, this.neighborPredicate, this.transportPredicate);
         }
 
-        this.done = true;
+        this.isDone = true;
     }
 }

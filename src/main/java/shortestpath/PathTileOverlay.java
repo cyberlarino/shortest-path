@@ -44,19 +44,18 @@ public class PathTileOverlay extends Overlay {
                 continue;
             }
 
-            for (WorldPoint b : plugin.getTransports().get(a)) {
-                Point cb = tileCenter(b);
-
+            for (Transport b : plugin.getTransports().get(a)) {
+                Point cb = tileCenter(b.getOrigin());
                 if (cb != null) {
                     graphics.drawLine(ca.x, ca.y, cb.x, cb.y);
                 }
             }
 
             StringBuilder s = new StringBuilder();
-            for (WorldPoint b : plugin.getTransports().get(a)) {
-                if (b.getPlane() > a.getPlane()) {
+            for (Transport b : plugin.getTransports().get(a)) {
+                if (b.getOrigin().getPlane() > a.getPlane()) {
                     s.append("+");
-                } else if (b.getPlane() < a.getPlane()) {
+                } else if (b.getOrigin().getPlane() < a.getPlane()) {
                     s.append("-");
                 } else {
                     s.append("=");
@@ -130,7 +129,7 @@ public class PathTileOverlay extends Overlay {
 
             Path path = plugin.currentPath.getPath();
             int counter = 0;
-            for (WorldPoint point : path.points) {
+            for (WorldPoint point : path.getPoints()) {
                 drawTile(graphics, point, color, counter++);
             }
         }
@@ -178,8 +177,7 @@ public class PathTileOverlay extends Overlay {
 
         if (counter >= 0 && !TileCounter.DISABLED.equals(config.showTileCounter())) {
             if (TileCounter.REMAINING.equals(config.showTileCounter())) {
-                counter = (!plugin.currentPath.isDone() ?
-                        plugin.currentPath.getPath().points.size() : plugin.currentPath.getPath().points.size() - counter - 1);
+                counter = plugin.currentPath.getPath().getPoints().size() - counter - 1;
             }
             String counterText = Integer.toString(counter);
             graphics.setColor(Color.WHITE);

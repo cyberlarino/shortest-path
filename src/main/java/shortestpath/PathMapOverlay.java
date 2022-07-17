@@ -7,6 +7,7 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.geom.Area;
+import java.util.stream.Stream;
 
 import net.runelite.api.Client;
 import net.runelite.api.Point;
@@ -60,14 +61,7 @@ public class PathMapOverlay extends Overlay {
             final int z = client.getPlane();
             for (int x = extent.x; x < (extent.x + extent.width + 1); x++) {
                 for (int y = extent.y - extent.height; y < (extent.y + 1); y++) {
-                    boolean blocked = true;
-                    for (OrdinalDirection direction : OrdinalDirection.values()) {
-                        if (plugin.getMap().checkDirection(x, y, z, direction)) {
-                            blocked = false;
-                            break;
-                        }
-                    }
-                    if (blocked) {
+                    if (plugin.getMap().isBlocked(x, y, z)) {
                         drawOnMap(graphics, new WorldPoint(x, y, z));
                     }
                 }
@@ -82,8 +76,8 @@ public class PathMapOverlay extends Overlay {
                     continue;
                 }
 
-                for (WorldPoint b : plugin.getTransports().get(a)) {
-                    Point mapB = worldMapOverlay.mapWorldPointToGraphicsPoint(b);
+                for (Transport b : plugin.getTransports().get(a)) {
+                    Point mapB = worldMapOverlay.mapWorldPointToGraphicsPoint(b.getOrigin());
                     if (mapB == null) {
                         continue;
                     }
@@ -98,7 +92,7 @@ public class PathMapOverlay extends Overlay {
             graphics.setColor(done ? config.colourPath() : config.colourPathCalculating());
             Path path = plugin.currentPath.getPath();
             if (path != null) {
-                for (WorldPoint point : path.points) {
+                for (WorldPoint point : path.getPoints()) {
                     drawOnMap(graphics, point);
                 }
             }
