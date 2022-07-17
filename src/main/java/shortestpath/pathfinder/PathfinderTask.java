@@ -52,6 +52,7 @@ public class PathfinderTask implements Runnable {
 
     @Override
     public void run() {
+
         NodeGraph graph = new NodeGraph(config.map, config.transports);
         graph.addBoundaryNode(new Node(start, null));
 
@@ -61,6 +62,7 @@ public class PathfinderTask implements Runnable {
             final Node node = graph.getBoundary().get(indexToEvaluate);
 
             if (node.getPosition().equals(target)) {
+
                 this.path = node.getPath();
                 break;
             }
