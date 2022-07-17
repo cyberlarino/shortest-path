@@ -107,10 +107,6 @@ public class ShortestPathPlugin extends Plugin {
     private PathfinderConfig pathfinderConfig;
     private boolean startPointSet = false;
 
-    public PathfinderTask currentPath;
-    private PathfinderTask.PathfinderConfig pathfinderConfig;
-    private boolean startPointSet = false;
-
     @Override
     protected void startUp() {
         final CollisionMap map = CollisionMap.fromFile("src/main/resources/collision-map.zip");
