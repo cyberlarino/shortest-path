@@ -31,14 +31,3 @@ jobs:
       uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
       with:
         arguments: build
-  
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-    
-    steps:
-    - name: Run unit tests
-      uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
-      with:
-        arguments: test --tests "pathfinder.*"
-   
