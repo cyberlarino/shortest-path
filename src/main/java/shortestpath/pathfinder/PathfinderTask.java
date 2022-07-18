@@ -6,9 +6,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
-import shortestpath.Path;
-import shortestpath.Transport;
-import shortestpath.Util;
+import shortestpath.worldmap.Transport;
+import shortestpath.utils.Util;
+import shortestpath.worldmap.WorldMap;
 
 @Slf4j
 public class PathfinderTask implements Runnable {
@@ -28,11 +28,13 @@ public class PathfinderTask implements Runnable {
     @Getter
     private boolean isDone = false;
 
+    private final WorldMap worldMap;
     private final PathfinderConfig config;
     private final Predicate<WorldPoint> neighborPredicate;
     private final Predicate<Transport> transportPredicate;
 
-    public PathfinderTask(PathfinderConfig config, WorldPoint start, WorldPoint target) {
+    public PathfinderTask(final WorldMap worldMap, final PathfinderConfig config, final WorldPoint start, final WorldPoint target) {
+        this.worldMap = worldMap;
         this.config = config;
         this.start = start;
         this.target = target;
@@ -52,8 +54,7 @@ public class PathfinderTask implements Runnable {
 
     @Override
     public void run() {
-
-        NodeGraph graph = new NodeGraph(config.map, config.transports);
+        NodeGraph graph = new NodeGraph(worldMap);
         graph.addBoundaryNode(new Node(start, null));
 
         int bestDistance = Integer.MAX_VALUE;
@@ -62,7 +63,6 @@ public class PathfinderTask implements Runnable {
             final Node node = graph.getBoundary().get(indexToEvaluate);
 
             if (node.getPosition().equals(target)) {
-
                 this.path = node.getPath();
                 break;
             }

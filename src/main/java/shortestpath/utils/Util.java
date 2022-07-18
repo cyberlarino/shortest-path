@@ -1,4 +1,4 @@
-package shortestpath;
+package shortestpath.utils;
 
 import net.runelite.api.coords.WorldPoint;
 

@@ -2,7 +2,6 @@ package shortestpath.pathfinder;
 
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-import shortestpath.Path;
 
 import java.util.LinkedList;
 

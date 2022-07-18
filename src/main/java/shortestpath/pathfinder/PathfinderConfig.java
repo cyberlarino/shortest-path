@@ -1,15 +1,10 @@
 package shortestpath.pathfinder;
 
-import net.runelite.api.coords.WorldPoint;
-import shortestpath.Transport;
+import shortestpath.worldmap.Transport;
 
-import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 
 public class PathfinderConfig {
-    public CollisionMap map;
-    public Map<WorldPoint, List<Transport>> transports;
     public boolean avoidWilderness = true;
     public boolean useTransports = true;
     public boolean useAgilityShortcuts = true;
@@ -17,16 +12,6 @@ public class PathfinderConfig {
     public int agilityLevel = 1;
     public int rangedLevel = 1;
     public int strengthLevel = 1;
-
-    public PathfinderConfig(CollisionMap map) {
-        this.map = map;
-        this.transports = null;
-    }
-
-    public PathfinderConfig(CollisionMap map, Map<WorldPoint, List<Transport>> transports) {
-        this.map = map;
-        this.transports = transports;
-    }
 
     public boolean canPlayerUseTransport(final Transport transport) {
         final int transportAgilityLevel = transport.getAgilityLevelRequired();
@@ -45,11 +30,8 @@ public class PathfinderConfig {
         }
 
         if (isGrappleShortcut && useGrappleShortcuts) {
-            if (agilityLevel >= transportAgilityLevel &&
-                    rangedLevel >= transportRangedLevel && strengthLevel >= transportStrengthLevel) {
-                return true;
-            }
-            return false;
+            return agilityLevel >= transportAgilityLevel &&
+                    rangedLevel >= transportRangedLevel && strengthLevel >= transportStrengthLevel;
         }
 
         return agilityLevel >= transportAgilityLevel;

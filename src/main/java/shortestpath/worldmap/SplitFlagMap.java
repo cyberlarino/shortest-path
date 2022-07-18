@@ -1,11 +1,11 @@
-package shortestpath.pathfinder;
+package shortestpath.worldmap;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.Weigher;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import shortestpath.Util;
+import shortestpath.utils.Util;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
