@@ -29,6 +29,12 @@ public class PathfinderRequestHandler {
         updatePath();
     }
 
+    public void clearPath() {
+        this.activeTask = null;
+        this.start = null;
+        this.target = null;
+    }
+
     public void setStart(final WorldPoint start) {
     }
 

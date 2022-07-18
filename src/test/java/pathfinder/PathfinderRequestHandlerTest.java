@@ -97,4 +97,29 @@ public class PathfinderRequestHandlerTest {
         pathfinderRequestHandler.setTarget(target);
         Assert.assertTrue(pathfinderRequestHandler.hasActivePath());
     }
+
+    @Test
+    public void testClearPath() {
+        // Tests that the function clearPath(), clears the path
+        final WorldPoint start = new WorldPoint(3171, 3383, 0);
+        final WorldPoint target = new WorldPoint(3171, 3404, 0);
+        final Path path = new Path(Arrays.asList(start, target));
+        when(clientInfoProviderMock.getPlayerLocation()).thenReturn(start);
+        when(pathfinderTaskGeneratorMock.generate(start, target)).thenReturn(pathfinderTaskMock);
+        when(pathfinderTaskMock.getPath()).thenReturn(path);
+
+        // Ensure Handler has path first
+        pathfinderRequestHandler.setTarget(target);
+        Assert.assertTrue(pathfinderRequestHandler.hasActivePath());
+        Assert.assertNotNull(pathfinderRequestHandler.getActivePath());
+        Assert.assertNotNull(pathfinderRequestHandler.getStart());
+        Assert.assertNotNull(pathfinderRequestHandler.getTarget());
+
+        // Clear path
+        pathfinderRequestHandler.clearPath();
+        Assert.assertFalse(pathfinderRequestHandler.hasActivePath());
+        Assert.assertNull(pathfinderRequestHandler.getActivePath());
+        Assert.assertNull(pathfinderRequestHandler.getStart());
+        Assert.assertNull(pathfinderRequestHandler.getTarget());
+    }
 }

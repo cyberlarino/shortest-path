@@ -261,8 +261,7 @@ public class ShortestPathPlugin extends Plugin {
         if (target == null) {
             worldMapPointManager.remove(marker);
             marker = null;
-//            currentPath = null;
-//            startPointSet = false;
+            pathfinderRequestHandler.clearPath();
         } else {
             worldMapPointManager.removeIf(x -> x == marker);
             marker = new WorldMapPoint(target, MARKER_IMAGE);
