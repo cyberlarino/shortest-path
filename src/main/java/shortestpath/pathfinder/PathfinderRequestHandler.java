@@ -14,6 +14,7 @@ public class PathfinderRequestHandler {
     private PathfinderTask activeTask = null;
     private WorldPoint start = null;
     private WorldPoint target = null;
+    private boolean isStartExplicitlySet = false;
 
     public PathfinderRequestHandler(final ClientInfoProvider clientInfoProvider,
                                     final WorldMapProvider worldMapProvider,
@@ -24,7 +25,9 @@ public class PathfinderRequestHandler {
     }
 
     public void setTarget(final WorldPoint target) {
-        this.start = clientInfoProvider.getPlayerLocation();
+        if (!isStartExplicitlySet) {
+            this.start = clientInfoProvider.getPlayerLocation();
+        }
         this.target = target;
         updatePath();
     }
@@ -33,10 +36,15 @@ public class PathfinderRequestHandler {
         this.activeTask = null;
         this.start = null;
         this.target = null;
+        this.isStartExplicitlySet = false;
     }
 
     public void setStart(final WorldPoint start) {
+        if (target == null) {
+            return;
+        }
         this.start = start;
+        isStartExplicitlySet = true;
         updatePath();
     }
 

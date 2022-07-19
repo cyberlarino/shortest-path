@@ -155,4 +155,43 @@ public class PathfinderRequestHandlerTest {
         verify(clientInfoProviderMock, never()).getPlayerLocation();
         verify(pathfinderTaskMock1).getPath();
     }
+
+    @Test
+    public void testRememberExplicitlySettingStart() {
+        // When using 'Set Start' path has been explicitly set, and a new path generated with 'Set Target' should
+        // keep this start point. Remember this until function 'clearPath()' has been called.
+
+        // Set-up, make initial player-target path
+        final WorldPoint playerPosition = new WorldPoint(3171, 3383, 0);
+        final WorldPoint target = new WorldPoint(3171, 3404, 0);
+        final Path playerToTargetPath = expectGeneratePath(playerPosition, target);
+        pathfinderRequestHandler.setTarget(target);
+
+        // Explicitly run 'Set Start' with new StartPoint
+        final WorldPoint startPoint = new WorldPoint(3161, 3364, 0);
+        final Path startToTargetPath = new Path(Arrays.asList(startPoint, target));
+
+        final PathfinderTask pathfinderTaskMock1 = mock(PathfinderTask.class);
+        when(pathfinderTaskGeneratorMock.generate(startPoint, target)).thenReturn(pathfinderTaskMock1);
+        when(pathfinderTaskMock1.getPath()).thenReturn(startToTargetPath);
+        pathfinderRequestHandler.setStart(startPoint);
+
+        // Then 'Set Target', explicitly set startPoint should be kept
+        final WorldPoint newTarget = new WorldPoint(3143, 3364, 0);
+        final Path startToNewTargetPath = new Path(Arrays.asList(startPoint, newTarget));
+
+        final PathfinderTask pathfinderTaskMock2 = mock(PathfinderTask.class);
+        when(pathfinderTaskGeneratorMock.generate(startPoint, newTarget)).thenReturn(pathfinderTaskMock2);
+        when(pathfinderTaskMock2.getPath()).thenReturn(startToNewTargetPath);
+
+        pathfinderRequestHandler.setTarget(newTarget);
+        Assert.assertEquals(startToNewTargetPath, pathfinderRequestHandler.getActivePath());
+
+
+        // Run 'clearPath()' and 'Set Target' again, start should be the point of the player
+        // as in the initial 'setTarget()' call.
+        pathfinderRequestHandler.clearPath();
+        pathfinderRequestHandler.setTarget(target);
+        Assert.assertEquals(playerToTargetPath, pathfinderRequestHandler.getActivePath());
+    }
 }
