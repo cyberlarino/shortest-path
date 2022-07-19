@@ -74,10 +74,14 @@ public class PathfinderRequestHandler {
     }
 
     private void updatePath() {
+        final WorldPoint originalStart = start;
+        final WorldPoint originalTarget = target;
         start = findClosestNonBlockedPoint(start);
         target = findClosestNonBlockedPoint(target);
         if (start == null || target == null) {
-            log.debug("No unblocked point close to " + (start == null ? "start" : "target") + " found, cancelling path");
+            final String invalidPointInfo = (start == null ?
+                    "start (" + originalStart + ")" : "target (" + originalTarget + ")");
+            log.debug("No unblocked point close to " + invalidPointInfo + " found, cancelling path");
             clearPath();
             return;
         }
@@ -88,6 +92,7 @@ public class PathfinderRequestHandler {
 
     @Nullable
     private final static int RADIUS_TO_CHECK = 10;
+
     private WorldPoint findClosestNonBlockedPoint(WorldPoint point) {
         final CollisionMap map = worldMapProvider.getCollisionMap();
 

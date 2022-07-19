@@ -27,13 +27,11 @@ public class PathfinderTask implements Runnable {
     private boolean isDone = false;
 
     private final WorldMap worldMap;
-    private final PathfinderConfig config;
     private final Predicate<WorldPoint> neighborPredicate;
     private final Predicate<Transport> transportPredicate;
 
     public PathfinderTask(final WorldMap worldMap, final PathfinderConfig config, final WorldPoint start, final WorldPoint target) {
         this.worldMap = worldMap;
-        this.config = config;
         this.start = start;
         this.target = target;
 

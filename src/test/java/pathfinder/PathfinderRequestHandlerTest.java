@@ -252,4 +252,15 @@ public class PathfinderRequestHandlerTest {
         final boolean requestedStartOnGeBorder = isPointOnGeBorder(worldPointArgumentCaptor.getValue());
         Assert.assertTrue(requestedStartOnGeBorder);
     }
+
+    @Test
+    public void testFilteringBlockedPoints_noValidTargetPoint() {
+        // 'Set Target' on a point far away from any unblocked points should not generate a path.
+        final WorldPoint somePlayerPosition = new WorldPoint(3166, 3479, 0);
+        when(clientInfoProviderMock.getPlayerLocation()).thenReturn(somePlayerPosition);
+        final WorldPoint unreachablePoint = new WorldPoint(3510, 3735, 0);
+
+        pathfinderRequestHandler.setTarget(unreachablePoint);
+        verify(pathfinderTaskGeneratorMock, never()).generate(any(), any());
+    }
 }
