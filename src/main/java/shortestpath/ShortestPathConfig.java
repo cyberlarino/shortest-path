@@ -7,6 +7,7 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
+import shortestpath.overlays.TileCounter;
 
 @ConfigGroup("shortestPath")
 public interface ShortestPathConfig extends Config {

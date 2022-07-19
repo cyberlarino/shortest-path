@@ -1,4 +1,4 @@
-package shortestpath;
+package shortestpath.worldmap;
 
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
@@ -38,6 +38,18 @@ public class Transport {
     @Getter
     private final int strengthLevelRequired;
 
+    public Transport(final WorldPoint origin, final WorldPoint destination, int agilityLevelRequired, int rangedLevelRequired, int strengthLevelRequired) {
+        this.origin = origin;
+        this.destination = destination;
+        this.agilityLevelRequired = agilityLevelRequired;
+        this.rangedLevelRequired = rangedLevelRequired;
+        this.strengthLevelRequired = strengthLevelRequired;
+    }
+
+    public Transport(final WorldPoint origin, final WorldPoint destination) {
+        this(origin, destination, 0, 0, 0);
+    }
+
     Transport(final String line) {
         final String DELIM = " ";
 
@@ -47,13 +59,13 @@ public class Transport {
         String[] parts_destination = parts[1].split(DELIM);
 
         origin = new WorldPoint(
-            Integer.parseInt(parts_origin[0]),
-            Integer.parseInt(parts_origin[1]),
-            Integer.parseInt(parts_origin[2]));
+                Integer.parseInt(parts_origin[0]),
+                Integer.parseInt(parts_origin[1]),
+                Integer.parseInt(parts_origin[2]));
         destination = new WorldPoint(
-            Integer.parseInt(parts_destination[0]),
-            Integer.parseInt(parts_destination[1]),
-            Integer.parseInt(parts_destination[2]));
+                Integer.parseInt(parts_destination[0]),
+                Integer.parseInt(parts_destination[1]),
+                Integer.parseInt(parts_destination[2]));
 
         int agilityLevel = 0;
         int rangedLevel = 0;
@@ -78,23 +90,10 @@ public class Transport {
         strengthLevelRequired = strengthLevel;
     }
 
-    Transport(final WorldPoint origin, final WorldPoint destination, int agilityLevelRequired, int rangedLevelRequired, int strengthLevelRequired) {
-        this.origin = origin;
-        this.destination = destination;
-        this.agilityLevelRequired = agilityLevelRequired;
-        this.rangedLevelRequired = rangedLevelRequired;
-        this.strengthLevelRequired = strengthLevelRequired;
-    }
-
-    Transport(final WorldPoint origin, final WorldPoint destination) {
-        this(origin, destination, 0, 0, 0);
-    }
-
-    public static Map<WorldPoint, List<Transport>> fromFile(final String filepath) {
+    public static Map<WorldPoint, List<Transport>> fromFile(final Path filepath) {
         HashMap<WorldPoint, List<Transport>> transports = new HashMap<>();
         try {
-            Path path = Paths.get(filepath);
-            byte[] encoded = Files.readAllBytes(path);
+            byte[] encoded = Files.readAllBytes(filepath);
             String s = new String(encoded, StandardCharsets.UTF_8);
             Scanner scanner = new Scanner(s);
             while (scanner.hasNextLine()) {

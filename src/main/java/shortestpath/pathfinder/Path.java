@@ -1,4 +1,4 @@
-package shortestpath;
+package shortestpath.pathfinder;
 
 import java.util.List;
 

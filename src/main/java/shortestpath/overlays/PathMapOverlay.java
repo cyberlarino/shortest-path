@@ -1,4 +1,4 @@
-package shortestpath;
+package shortestpath.overlays;
 
 import com.google.inject.Inject;
 
@@ -7,7 +7,6 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.geom.Area;
-import java.util.stream.Stream;
 
 import net.runelite.api.Client;
 import net.runelite.api.Point;
@@ -19,23 +18,36 @@ import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
-import shortestpath.pathfinder.OrdinalDirection;
+import shortestpath.ClientInfoProvider;
+import shortestpath.ConfigProvider;
+import shortestpath.pathfinder.Path;
+import shortestpath.pathfinder.PathfinderRequestHandler;
+import shortestpath.worldmap.Transport;
+import shortestpath.worldmap.WorldMapProvider;
 
 public class PathMapOverlay extends Overlay {
     private final Client client;
-    private final ShortestPathPlugin plugin;
-    private final ShortestPathConfig config;
-
-    @Inject
-    private WorldMapOverlay worldMapOverlay;
+    private final WorldMapOverlay worldMapOverlay;
+    private final ClientInfoProvider clientInfoProvider;
+    private final PathfinderRequestHandler pathfinderRequestHandler;
+    private final WorldMapProvider worldMapProvider;
+    private final ConfigProvider configProvider;
 
     private Area mapClipArea;
 
-    @Inject
-    private PathMapOverlay(Client client, ShortestPathPlugin plugin, ShortestPathConfig config) {
+    public PathMapOverlay(final Client client,
+                   final WorldMapOverlay worldMapOverlay,
+                   final ClientInfoProvider clientInfoProvider,
+                   final PathfinderRequestHandler pathfinderRequestHandler,
+                   final WorldMapProvider worldMapProvider,
+                   final ConfigProvider configProvider) {
         this.client = client;
-        this.plugin = plugin;
-        this.config = config;
+        this.worldMapOverlay = worldMapOverlay;
+        this.clientInfoProvider = clientInfoProvider;
+        this.pathfinderRequestHandler = pathfinderRequestHandler;
+        this.worldMapProvider = worldMapProvider;
+        this.configProvider = configProvider;
+
         setPosition(OverlayPosition.DYNAMIC);
         setPriority(OverlayPriority.LOW);
         setLayer(OverlayLayer.MANUAL);
@@ -44,7 +56,7 @@ public class PathMapOverlay extends Overlay {
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        if (!config.drawMap()) {
+        if (!configProvider.drawPathOnWorldMap()) {
             return null;
         }
 
@@ -55,28 +67,29 @@ public class PathMapOverlay extends Overlay {
         mapClipArea = getWorldMapClipArea(client.getWidget(WidgetInfo.WORLD_MAP_VIEW).getBounds());
         graphics.setClip(mapClipArea);
 
-        if (config.drawCollisionMap()) {
-            graphics.setColor(config.colourCollisionMap());
+        if (configProvider.drawCollisionMap()) {
+            graphics.setColor(configProvider.colorCollisionMap());
             Rectangle extent = getWorldMapExtent(client.getWidget(WidgetInfo.WORLD_MAP_VIEW).getBounds());
             final int z = client.getPlane();
             for (int x = extent.x; x < (extent.x + extent.width + 1); x++) {
                 for (int y = extent.y - extent.height; y < (extent.y + 1); y++) {
-                    if (plugin.getMap().isBlocked(x, y, z)) {
-                        drawOnMap(graphics, new WorldPoint(x, y, z));
+                    WorldPoint point = new WorldPoint(x, y, z);
+                    if (worldMapProvider.getCollisionMap().isBlocked(point)) {
+                        drawOnMap(graphics, point);
                     }
                 }
             }
         }
 
-        if (config.drawTransports()) {
+        if (configProvider.drawTransports()) {
             graphics.setColor(Color.WHITE);
-            for (WorldPoint a : plugin.getTransports().keySet()) {
+            for (WorldPoint a : worldMapProvider.getTransports().keySet()) {
                 Point mapA = worldMapOverlay.mapWorldPointToGraphicsPoint(a);
                 if (mapA == null) {
                     continue;
                 }
 
-                for (Transport b : plugin.getTransports().get(a)) {
+                for (Transport b : worldMapProvider.getTransports().get(a)) {
                     Point mapB = worldMapOverlay.mapWorldPointToGraphicsPoint(b.getOrigin());
                     if (mapB == null) {
                         continue;
@@ -87,10 +100,10 @@ public class PathMapOverlay extends Overlay {
             }
         }
 
-        if (plugin.currentPath != null) {
-            boolean done = plugin.currentPath.isDone();
-            graphics.setColor(done ? config.colourPath() : config.colourPathCalculating());
-            Path path = plugin.currentPath.getPath();
+        if (pathfinderRequestHandler.getActivePath() != null) {
+            final boolean done = pathfinderRequestHandler.isActivePathDone();
+            graphics.setColor(done ? configProvider.colorPath() : configProvider.colorPathCalculating());
+            final Path path = pathfinderRequestHandler.getActivePath();
             if (path != null) {
                 for (WorldPoint point : path.getPoints()) {
                     drawOnMap(graphics, point);
@@ -101,9 +114,9 @@ public class PathMapOverlay extends Overlay {
         return null;
     }
 
-    private void drawOnMap(Graphics2D graphics, WorldPoint point) {
-        Point start = plugin.mapWorldPointToGraphicsPoint(point);
-        Point end = plugin.mapWorldPointToGraphicsPoint(point.dx(1).dy(-1));
+    private void drawOnMap(final Graphics2D graphics, final WorldPoint point) {
+        final Point start = clientInfoProvider.mapWorldPointToGraphicsPoint(point);
+        final Point end = clientInfoProvider.mapWorldPointToGraphicsPoint(point.dx(1).dy(-1));
 
         if (start == null || end == null) {
             return;
@@ -137,8 +150,8 @@ public class PathMapOverlay extends Overlay {
     }
 
     private Rectangle getWorldMapExtent(Rectangle baseRectangle) {
-        WorldPoint topLeft = plugin.calculateMapPoint(new Point(baseRectangle.x, baseRectangle.y));
-        WorldPoint bottomRight = plugin.calculateMapPoint(
+        WorldPoint topLeft = clientInfoProvider.calculateMapPoint(new Point(baseRectangle.x, baseRectangle.y));
+        WorldPoint bottomRight = clientInfoProvider.calculateMapPoint(
                 new Point(baseRectangle.x + baseRectangle.width, baseRectangle.y + baseRectangle.height));
         return new Rectangle(topLeft.getX(), topLeft.getY(), bottomRight.getX() - topLeft.getX(), topLeft.getY() - bottomRight.getY());
     }

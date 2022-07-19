@@ -1,20 +1,16 @@
 package pathfinder;
 
-import net.runelite.api.Point;
-import net.runelite.api.World;
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
 import org.junit.Test;
-import shortestpath.Path;
-import shortestpath.Transport;
-import shortestpath.pathfinder.CollisionMap;
+import shortestpath.pathfinder.Path;
+import shortestpath.worldmap.Transport;
 import shortestpath.pathfinder.Node;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.PathfinderTask;
+import shortestpath.worldmap.WorldMapProvider;
 
-import java.sql.Array;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -23,15 +19,13 @@ import java.util.function.Predicate;
 public class PathfinderTest {
     private static final long TIMEOUT_SECONDS = 5;
 
-    private final CollisionMap map;
-    private final Map<WorldPoint, List<Transport>> transports;
+    private final WorldMapProvider worldMapProvider;
     private final PathfinderConfig defaultConfig;
     private final List<WorldPoint> varrockSteppingStoneShortcutPoints;
 
     public PathfinderTest() {
-        this.map = CollisionMap.fromFile("src/main/resources/collision-map.zip");
-        this.transports = Transport.fromFile("src/main/resources/transports.txt");
-        this.defaultConfig = new PathfinderConfig(map, transports);
+        this.worldMapProvider = new WorldMapProvider();
+        this.defaultConfig = new PathfinderConfig();
 
         this.varrockSteppingStoneShortcutPoints = new ArrayList<>();
         this.varrockSteppingStoneShortcutPoints.add(new WorldPoint(3150, 3363, 0));
@@ -57,11 +51,11 @@ public class PathfinderTest {
 
     private boolean isPathValid(final Path path) {
         final Predicate<WorldPoint> pointTransportOrNotBlocked = worldPoint -> {
-            if (!map.isBlocked(worldPoint)) {
+            if (!worldMapProvider.getCollisionMap().isBlocked(worldPoint)) {
                 return true;
             }
 
-            if (transports.getOrDefault(worldPoint, new ArrayList<>()).size() != 0) {
+            if (worldMapProvider.getTransports().getOrDefault(worldPoint, new ArrayList<>()).size() != 0) {
                 return true;
             }
             return false;
@@ -78,7 +72,7 @@ public class PathfinderTest {
             if (point.distanceTo(nextPoint) > 1) {
                 // A 'jump' in the path, either transport was used, or path isn't connected properly
                 boolean pathTransportUsed = false;
-                for (Transport transport : transports.getOrDefault(point, new ArrayList<>())) {
+                for (Transport transport : worldMapProvider.getTransports().getOrDefault(point, new ArrayList<>())) {
                     if (transport.getDestination().equals(nextPoint)) {
                         pathTransportUsed = true;
                         break;
@@ -114,7 +108,7 @@ public class PathfinderTest {
 
         final WorldPoint start = new WorldPoint(3171, 3383, 0);
         final WorldPoint target = new WorldPoint(3171, 3404, 0);
-        final PathfinderTask task = new PathfinderTask(config, start, target);
+        final PathfinderTask task = new PathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
 
         final boolean calculatedPathInTime = waitForPathfinderTaskCompletion(task);
         Assert.assertTrue(calculatedPathInTime);
@@ -133,7 +127,7 @@ public class PathfinderTest {
 
         final WorldPoint start = new WorldPoint(3147, 3338, 0);
         final WorldPoint target = new WorldPoint(3175, 3323, 0);
-        final PathfinderTask task = new PathfinderTask(config, start, target);
+        final PathfinderTask task = new PathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
 
         final boolean calculatedPathInTime = waitForPathfinderTaskCompletion(task);
         final boolean isPathValid = isPathValid(task.getPath());
@@ -165,14 +159,14 @@ public class PathfinderTest {
     public void testShortcut_NotMeetingRequirements() {
         // Test that the Varrock stepping stone shortcut isn't used, if required level isn't met
         //   illustrations/testShortcut.png
-        final PathfinderConfig config = new PathfinderConfig(map, transports);
+        final PathfinderConfig config = defaultConfig;
         config.useTransports = true;
         config.useAgilityShortcuts = true;
         config.agilityLevel = 30;
 
         final WorldPoint start = new WorldPoint(3161, 3364, 0);
         final WorldPoint target = new WorldPoint(3143, 3364, 0);
-        final PathfinderTask task = new PathfinderTask(config, start, target);
+        final PathfinderTask task = new PathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
 
         final boolean calculatedPathInTime = waitForPathfinderTaskCompletion(task);
         Assert.assertTrue(calculatedPathInTime);
@@ -189,14 +183,14 @@ public class PathfinderTest {
     public void testShortcut_MeetingRequirements() {
         // Test that the Varrock stepping stone shortcut is used when required level met
         //   illustrations/testShortcut.png
-        final PathfinderConfig config = new PathfinderConfig(map, transports);
+        final PathfinderConfig config = defaultConfig;
         config.useTransports = true;
         config.useAgilityShortcuts = true;
         config.agilityLevel = 31;
 
         final WorldPoint start = new WorldPoint(3161, 3364, 0);
         final WorldPoint target = new WorldPoint(3143, 3364, 0);
-        final PathfinderTask task = new PathfinderTask(config, start, target);
+        final PathfinderTask task = new PathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
 
         final boolean calculatedPathInTime = waitForPathfinderTaskCompletion(task);
         Assert.assertTrue(calculatedPathInTime);

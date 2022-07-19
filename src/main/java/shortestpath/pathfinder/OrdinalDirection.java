@@ -1,6 +1,8 @@
 package shortestpath.pathfinder;
 
 import java.awt.Point;
+import java.util.Arrays;
+import java.util.List;
 
 public enum OrdinalDirection {
     NORTH {
@@ -44,26 +46,17 @@ public enum OrdinalDirection {
         }
     };
 
+    public static final List<OrdinalDirection> CARDINAL_DIRECTIONS = Arrays.asList(OrdinalDirection.NORTH,
+            OrdinalDirection.EAST,
+            OrdinalDirection.SOUTH,
+            OrdinalDirection.WEST);
+
     public abstract Point toPoint();
 
     public static OrdinalDirection fromPoint(final Point point) {
-        if (point.equals(new Point(0, 1))) {
-            return OrdinalDirection.NORTH;
-        } else if (point.equals(new Point(1, 0))) {
-            return OrdinalDirection.EAST;
-        } else if (point.equals(new Point(0, -1))) {
-            return OrdinalDirection.SOUTH;
-        } else if (point.equals(new Point(-1, 0))) {
-            return OrdinalDirection.WEST;
-        } else if (point.equals(new Point(-1, 1))) {
-            return OrdinalDirection.NORTH_WEST;
-        } else if (point.equals(new Point(1, 1))) {
-            return OrdinalDirection.NORTH_EAST;
-        } else if (point.equals(new Point(1, -1))) {
-            return OrdinalDirection.SOUTH_EAST;
-        } else if (point.equals(new Point(-1, -1))) {
-            return OrdinalDirection.SOUTH_WEST;
-        }
-        return null;
+        return Arrays.stream(OrdinalDirection.values())
+                        .filter(direction -> direction.toPoint().equals(point))
+                        .findAny()
+                        .orElseThrow(() -> new RuntimeException("Couldn't convert Point to Direction - " + point));
     }
 }

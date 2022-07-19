@@ -1,4 +1,4 @@
-package shortestpath;
+package shortestpath.overlays;
 
 import com.google.inject.Inject;
 import java.awt.Color;
@@ -15,20 +15,32 @@ import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayPriority;
+import shortestpath.ClientInfoProvider;
+import shortestpath.ConfigProvider;
+import shortestpath.pathfinder.PathfinderRequestHandler;
+import shortestpath.worldmap.WorldMapProvider;
 
 public class PathMinimapOverlay extends Overlay {
     private static final int TILE_WIDTH = 4;
     private static final int TILE_HEIGHT = 4;
 
     private final Client client;
-    private final ShortestPathPlugin plugin;
-    private final ShortestPathConfig config;
+    private ClientInfoProvider clientInfoProvider;
+    private PathfinderRequestHandler pathfinderRequestHandler;
+    private WorldMapProvider worldMapProvider;
+    private ConfigProvider configProvider;
 
-    @Inject
-    private PathMinimapOverlay(Client client, ShortestPathPlugin plugin, ShortestPathConfig config) {
+    public PathMinimapOverlay(final Client client,
+                       final ClientInfoProvider clientInfoProvider,
+                       final PathfinderRequestHandler pathfinderRequestHandler,
+                       final WorldMapProvider worldMapProvider,
+                       final ConfigProvider configProvider) {
         this.client = client;
-        this.plugin = plugin;
-        this.config = config;
+        this.clientInfoProvider = clientInfoProvider;
+        this.pathfinderRequestHandler = pathfinderRequestHandler;
+        this.worldMapProvider = worldMapProvider;
+        this.configProvider = configProvider;
+
         setPosition(OverlayPosition.DYNAMIC);
         setPriority(OverlayPriority.LOW);
         setLayer(OverlayLayer.ABOVE_WIDGETS);
@@ -36,22 +48,22 @@ public class PathMinimapOverlay extends Overlay {
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        if (!config.drawMinimap() || plugin.currentPath == null) {
+        if (!configProvider.drawPathOnMinimap() || pathfinderRequestHandler.getActivePath() == null) {
             return null;
         }
 
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-        graphics.setClip(plugin.getMinimapClipArea());
+        graphics.setClip(clientInfoProvider.getMinimapClipArea());
 
-        if (plugin.currentPath.isDone()) {
-            List<WorldPoint> pathPoints = plugin.currentPath.getPath().getPoints();
+        if (pathfinderRequestHandler.isActivePathDone()) {
+            List<WorldPoint> pathPoints = pathfinderRequestHandler.getActivePath().getPoints();
             if (pathPoints != null) {
                 for (WorldPoint pathPoint : pathPoints) {
                     if (pathPoint.getPlane() != client.getPlane()) {
                         continue;
                     }
 
-                    Color pathColor = (plugin.currentPath.isDone() ? config.colourPath() : config.colourPathCalculating());
+                    final Color pathColor = (pathfinderRequestHandler.isActivePathDone() ? configProvider.colorPath() : configProvider.colorPathCalculating());
                     drawOnMinimap(graphics, pathPoint, pathColor);
                 }
             }
@@ -61,7 +73,7 @@ public class PathMinimapOverlay extends Overlay {
     }
 
     private void drawOnMinimap(Graphics2D graphics, WorldPoint point, Color color) {
-        LocalPoint lp = LocalPoint.fromWorld(client, point);
+        final LocalPoint lp = LocalPoint.fromWorld(client, point);
 
         if (lp == null) {
             return;

@@ -3,14 +3,12 @@ package shortestpath.pathfinder;
 import java.util.function.Predicate;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
-import shortestpath.Path;
-import shortestpath.Transport;
-import shortestpath.Util;
+import shortestpath.worldmap.Transport;
+import shortestpath.utils.Util;
+import shortestpath.worldmap.WorldMap;
 
-@Slf4j
 public class PathfinderTask implements Runnable {
     private static final WorldArea WILDERNESS_ABOVE_GROUND = new WorldArea(2944, 3523, 448, 448, 0);
     private static final WorldArea WILDERNESS_UNDERGROUND = new WorldArea(2944, 9918, 320, 442, 0);
@@ -28,11 +26,13 @@ public class PathfinderTask implements Runnable {
     @Getter
     private boolean isDone = false;
 
+    private final WorldMap worldMap;
     private final PathfinderConfig config;
     private final Predicate<WorldPoint> neighborPredicate;
     private final Predicate<Transport> transportPredicate;
 
-    public PathfinderTask(PathfinderConfig config, WorldPoint start, WorldPoint target) {
+    public PathfinderTask(final WorldMap worldMap, final PathfinderConfig config, final WorldPoint start, final WorldPoint target) {
+        this.worldMap = worldMap;
         this.config = config;
         this.start = start;
         this.target = target;
@@ -46,14 +46,12 @@ public class PathfinderTask implements Runnable {
         };
         this.transportPredicate = config.getCanPlayerUseTransportPredicate();
 
-        log.debug("New PathfinderTask started: " + Util.worldPointToString(start) + " to " + Util.worldPointToString(target));
         new Thread(this).start();
     }
 
     @Override
     public void run() {
-
-        NodeGraph graph = new NodeGraph(config.map, config.transports);
+        NodeGraph graph = new NodeGraph(worldMap);
         graph.addBoundaryNode(new Node(start, null));
 
         int bestDistance = Integer.MAX_VALUE;
@@ -62,7 +60,6 @@ public class PathfinderTask implements Runnable {
             final Node node = graph.getBoundary().get(indexToEvaluate);
 
             if (node.getPosition().equals(target)) {
-
                 this.path = node.getPath();
                 break;
             }

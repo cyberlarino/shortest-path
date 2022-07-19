@@ -1,4 +1,4 @@
-package shortestpath;
+package shortestpath.overlays;
 
 public enum TileCounter {
     DISABLED,

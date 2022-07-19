@@ -1,4 +1,4 @@
-package shortestpath.pathfinder;
+package shortestpath.worldmap;
 
 import java.nio.ByteBuffer;
 import java.util.BitSet;

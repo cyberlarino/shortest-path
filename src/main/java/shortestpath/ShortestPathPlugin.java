@@ -8,10 +8,6 @@ import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.Player;
 import net.runelite.api.Point;
-import net.runelite.api.RenderOverview;
-import net.runelite.api.Skill;
-import net.runelite.api.SpriteID;
-import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.MenuEntryAdded;
@@ -31,28 +27,28 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.Text;
-import shortestpath.pathfinder.CollisionMap;
-import shortestpath.pathfinder.PathfinderConfig;
+import shortestpath.pathfinder.PathfinderRequestHandler;
 import shortestpath.pathfinder.PathfinderTask;
+import shortestpath.overlays.PathMapOverlay;
+import shortestpath.overlays.PathMinimapOverlay;
+import shortestpath.overlays.PathTileOverlay;
+import shortestpath.pathfinder.PathfinderTaskGenerator;
+import shortestpath.worldmap.Transport;
+import shortestpath.worldmap.WorldMapProvider;
 
-import java.awt.Color;
-import java.awt.Polygon;
-import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
-import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 @PluginDescriptor(
-    name = "Shortest Path",
-    description = "Draws the shortest path to a chosen destination on the map (right click a spot on the world map to use)",
-    tags = {"pathfinder", "map", "waypoint", "navigation"}
+        name = "Shortest Path",
+        description = "Draws the shortest path to a chosen destination on the map (right click a spot on the world map to use)",
+        tags = {"pathfinder", "map", "waypoint", "navigation"}
 )
 public class ShortestPathPlugin extends Plugin {
     private static final String ADD_START = "Add start";
@@ -76,15 +72,6 @@ public class ShortestPathPlugin extends Plugin {
     public OverlayManager overlayManager;
 
     @Inject
-    public PathTileOverlay pathOverlay;
-
-    @Inject
-    public PathMinimapOverlay pathMinimapOverlay;
-
-    @Inject
-    public PathMapOverlay pathMapOverlay;
-
-    @Inject
     private SpriteManager spriteManager;
 
     @Inject
@@ -97,21 +84,32 @@ public class ShortestPathPlugin extends Plugin {
     public WorldMapPoint marker;
     private WorldPoint transportStart;
     private MenuEntry lastClick;
-    private Shape minimapClipFixed;
-    private Shape minimapClipResizeable;
-    private BufferedImage minimapSpriteFixed;
-    private BufferedImage minimapSpriteResizeable;
-    private Rectangle lastMinimapRectangle = new Rectangle(-1, -1, 0, 0);
 
-    public PathfinderTask currentPath;
-    private PathfinderConfig pathfinderConfig;
-    private boolean startPointSet = false;
+    private PathTileOverlay pathOverlay;
+    private PathMinimapOverlay pathMinimapOverlay;
+    private PathMapOverlay pathMapOverlay;
+
+    private ClientInfoProvider clientInfoProvider;
+    private ConfigProvider configProvider;
+    private WorldMapProvider worldMapProvider;
+    private PathfinderTaskGenerator pathfinderTaskGenerator;
+    private PathfinderRequestHandler pathfinderRequestHandler;
 
     @Override
     protected void startUp() {
-        final CollisionMap map = CollisionMap.fromFile("src/main/resources/collision-map.zip");
-        final Map<WorldPoint, List<Transport>> transports = Transport.fromFile("src/main/resources/transports.txt");
-        this.pathfinderConfig = new PathfinderConfig(map, transports);
+        // Providers
+        this.clientInfoProvider = new ClientInfoProvider(client, spriteManager);
+        this.configProvider = new ConfigProvider(config, clientInfoProvider);
+        this.worldMapProvider = new WorldMapProvider();
+
+        // Pathfinder
+        this.pathfinderTaskGenerator = new PathfinderTaskGenerator(configProvider, worldMapProvider);
+        this.pathfinderRequestHandler = new PathfinderRequestHandler(clientInfoProvider, worldMapProvider, pathfinderTaskGenerator);
+
+        // Overlays
+        this.pathOverlay = new PathTileOverlay(client, pathfinderRequestHandler, worldMapProvider, configProvider);
+        this.pathMinimapOverlay = new PathMinimapOverlay(client, clientInfoProvider, pathfinderRequestHandler, worldMapProvider, configProvider);
+        this.pathMapOverlay = new PathMapOverlay(client, worldMapOverlay, clientInfoProvider, pathfinderRequestHandler, worldMapProvider, configProvider);
 
         overlayManager.add(pathOverlay);
         overlayManager.add(pathMinimapOverlay);
@@ -126,16 +124,15 @@ public class ShortestPathPlugin extends Plugin {
     }
 
     public boolean isNearPath(WorldPoint location) {
-        if (currentPath == null || currentPath.getPath() == null || currentPath.getPath().getPoints().isEmpty()) {
+        if (!pathfinderRequestHandler.hasActivePath() || pathfinderRequestHandler.getActivePath().getPoints().isEmpty()) {
             return true;
         }
 
-        for (WorldPoint point : currentPath.getPath().getPoints()) {
+        for (final WorldPoint point : pathfinderRequestHandler.getActivePath().getPoints()) {
             if (config.recalculateDistance() < 0 || location.distanceTo2D(point) < config.recalculateDistance()) {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -146,23 +143,14 @@ public class ShortestPathPlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick tick) {
-        Player localPlayer = client.getLocalPlayer();
-        if (localPlayer == null || currentPath == null) {
+        if (!pathfinderRequestHandler.hasActivePath()) {
             return;
         }
 
-        WorldPoint currentLocation = localPlayer.getWorldLocation();
-        if (currentLocation.distanceTo(currentPath.getTarget()) < config.reachedDistance()) {
+        final WorldPoint currentLocation = clientInfoProvider.getPlayerLocation();
+        if (currentLocation.distanceTo(pathfinderRequestHandler.getTarget()) < config.reachedDistance()) {
             setTarget(null);
             return;
-        }
-
-        if (!startPointSet && !isNearPath(currentLocation)) {
-            if (config.cancelInstead()) {
-                setTarget(null);
-                return;
-            }
-            currentPath = new PathfinderTask(getPathfinderConfig(), currentLocation, currentPath.getTarget());
         }
     }
 
@@ -176,68 +164,38 @@ public class ShortestPathPlugin extends Plugin {
             }
 
             addMenuEntry(event, SET, TARGET, 1);
-            if (currentPath != null) {
-                if (currentPath.getTarget() != null) {
-                    addMenuEntry(event, SET, START, 1);
-                }
-                WorldPoint selectedTile = getSelectedWorldPoint();
-                if (currentPath.getPath() != null) {
-                    for (WorldPoint tile : currentPath.getPath().getPoints()) {
-                        if (tile.equals(selectedTile)) {
-                            addMenuEntry(event, CLEAR, PATH, 1);
-                            break;
-                        }
+            if (pathfinderRequestHandler.hasActivePath()) {
+                addMenuEntry(event, SET, START, 1);
+
+                final WorldPoint selectedTile = getSelectedWorldPoint();
+                for (final WorldPoint tile : pathfinderRequestHandler.getActivePath().getPoints()) {
+                    if (tile.equals(selectedTile)) {
+                        addMenuEntry(event, CLEAR, PATH, 1);
+                        break;
                     }
                 }
             }
         }
 
         final Widget map = client.getWidget(WidgetInfo.WORLD_MAP_VIEW);
-
         if (map != null && map.getBounds().contains(client.getMouseCanvasPosition().getX(), client.getMouseCanvasPosition().getY())) {
             addMenuEntry(event, SET, TARGET, 0);
-            if (currentPath != null) {
-                if (currentPath.getTarget() != null) {
-                    addMenuEntry(event, SET, START, 0);
-                    addMenuEntry(event, CLEAR, PATH, 0);
-                }
+            if (pathfinderRequestHandler.hasActivePath()) {
+                addMenuEntry(event, SET, START, 0);
+                addMenuEntry(event, CLEAR, PATH, 0);
             }
         }
 
-        final Shape minimap = getMinimapClipArea();
-
-        if (minimap != null && currentPath != null &&
-            minimap.contains(client.getMouseCanvasPosition().getX(), client.getMouseCanvasPosition().getY())) {
+        final Shape minimap = clientInfoProvider.getMinimapClipArea();
+        if (minimap != null && pathfinderRequestHandler.hasActivePath() &&
+                minimap.contains(client.getMouseCanvasPosition().getX(), client.getMouseCanvasPosition().getY())) {
             addMenuEntry(event, CLEAR, PATH, 0);
         }
     }
 
-    public PathfinderConfig getPathfinderConfig() {
-        pathfinderConfig.avoidWilderness = config.avoidWilderness();
-        pathfinderConfig.useTransports = true;
-        pathfinderConfig.useAgilityShortcuts = config.useAgilityShortcuts();
-        pathfinderConfig.useGrappleShortcuts = config.useGrappleShortcuts();
-        pathfinderConfig.agilityLevel = client.getBoostedSkillLevel(Skill.AGILITY);
-        pathfinderConfig.rangedLevel = client.getBoostedSkillLevel(Skill.RANGED);
-        pathfinderConfig.strengthLevel = client.getBoostedSkillLevel(Skill.STRENGTH);
-        return pathfinderConfig;
-    }
-
-    public Map<WorldPoint, List<Transport>> getTransports() {
-        return this.pathfinderConfig.transports;
-    }
-
-    public CollisionMap getMap() {
-        return this.pathfinderConfig.map;
-    }
-
     private void onMenuOptionClicked(MenuEntry entry) {
-        Player localPlayer = client.getLocalPlayer();
-        if (localPlayer == null) {
-            return;
-        }
+        final WorldPoint currentLocation = clientInfoProvider.getPlayerLocation();
 
-        WorldPoint currentLocation = localPlayer.getWorldLocation();
         if (entry.getOption().equals(ADD_START) && entry.getTarget().equals(TRANSPORT)) {
             transportStart = currentLocation;
         }
@@ -249,7 +207,7 @@ public class ShortestPathPlugin extends Plugin {
                     lastClick.getOption() + " " + Text.removeTags(lastClick.getTarget()) + " " + lastClick.getIdentifier()
             );
             Transport transport = new Transport(transportStart, transportEnd);
-            pathfinderConfig.transports.computeIfAbsent(transportStart, k -> new ArrayList<>()).add(transport);
+            worldMapProvider.getTransports().computeIfAbsent(transportStart, k -> new ArrayList<>()).add(transport);
         }
 
         if (entry.getOption().equals("Copy Position")) {
@@ -264,12 +222,11 @@ public class ShortestPathPlugin extends Plugin {
         }
 
         if (entry.getOption().equals(SET) && entry.getTarget().equals(START)) {
-            setStart(getSelectedWorldPoint());
+            pathfinderRequestHandler.setStart(getSelectedWorldPoint());
         }
 
         if (entry.getOption().equals(CLEAR) && entry.getTarget().equals(PATH)) {
             setTarget(null);
-            startPointSet = false;
         }
 
         if (entry.getType() != MenuAction.WALK) {
@@ -277,29 +234,22 @@ public class ShortestPathPlugin extends Plugin {
         }
     }
 
-    private WorldPoint getSelectedWorldPoint()
-    {
+    private WorldPoint getSelectedWorldPoint() {
         if (client.getWidget(WidgetInfo.WORLD_MAP_VIEW) == null) {
             if (client.getSelectedSceneTile() != null) {
                 return client.getSelectedSceneTile().getWorldLocation();
             }
         } else {
-            return calculateMapPoint(client.isMenuOpen() ? lastMenuOpenedPoint : client.getMouseCanvasPosition());
+            return clientInfoProvider.calculateMapPoint(client.isMenuOpen() ? lastMenuOpenedPoint : client.getMouseCanvasPosition());
         }
         return null;
     }
 
-    private void setTarget(WorldPoint target) {
-        Player localPlayer = client.getLocalPlayer();
-        if (!startPointSet && localPlayer == null) {
-            return;
-        }
-
+    private void setTarget(final WorldPoint target) {
         if (target == null) {
             worldMapPointManager.remove(marker);
             marker = null;
-            currentPath = null;
-            startPointSet = false;
+            pathfinderRequestHandler.clearPath();
         } else {
             worldMapPointManager.removeIf(x -> x == marker);
             marker = new WorldMapPoint(target, MARKER_IMAGE);
@@ -308,70 +258,8 @@ public class ShortestPathPlugin extends Plugin {
             marker.setJumpOnClick(true);
             worldMapPointManager.add(marker);
 
-            WorldPoint start = localPlayer.getWorldLocation();
-            if (startPointSet && currentPath != null) {
-                start = currentPath.getStart();
-            }
-            currentPath = new PathfinderTask(getPathfinderConfig(), start, target);
+            pathfinderRequestHandler.setTarget(target);
         }
-    }
-
-    private void setStart(WorldPoint start) {
-        if (currentPath == null) {
-            return;
-        }
-        startPointSet = true;
-        currentPath = new PathfinderTask(getPathfinderConfig(), start, currentPath.getTarget());
-    }
-
-    public WorldPoint calculateMapPoint(Point point) {
-        float zoom = client.getRenderOverview().getWorldMapZoom();
-        RenderOverview renderOverview = client.getRenderOverview();
-        final WorldPoint mapPoint = new WorldPoint(renderOverview.getWorldMapPosition().getX(), renderOverview.getWorldMapPosition().getY(), 0);
-        final Point middle = mapWorldPointToGraphicsPoint(mapPoint);
-
-        if (point == null || middle == null) {
-            return null;
-        }
-
-        final int dx = (int) ((point.getX() - middle.getX()) / zoom);
-        final int dy = (int) ((-(point.getY() - middle.getY())) / zoom);
-
-        return mapPoint.dx(dx).dy(dy);
-    }
-
-    public Point mapWorldPointToGraphicsPoint(WorldPoint worldPoint)
-    {
-        RenderOverview ro = client.getRenderOverview();
-
-        float pixelsPerTile = ro.getWorldMapZoom();
-
-        Widget map = client.getWidget(WidgetInfo.WORLD_MAP_VIEW);
-        if (map != null) {
-            Rectangle worldMapRect = map.getBounds();
-
-            int widthInTiles = (int) Math.ceil(worldMapRect.getWidth() / pixelsPerTile);
-            int heightInTiles = (int) Math.ceil(worldMapRect.getHeight() / pixelsPerTile);
-
-            Point worldMapPosition = ro.getWorldMapPosition();
-
-            int yTileMax = worldMapPosition.getY() - heightInTiles / 2;
-            int yTileOffset = (yTileMax - worldPoint.getY() - 1) * -1;
-            int xTileOffset = worldPoint.getX() + widthInTiles / 2 - worldMapPosition.getX();
-
-            int xGraphDiff = ((int) (xTileOffset * pixelsPerTile));
-            int yGraphDiff = (int) (yTileOffset * pixelsPerTile);
-
-            yGraphDiff -= pixelsPerTile - Math.ceil(pixelsPerTile / 2);
-            xGraphDiff += pixelsPerTile - Math.ceil(pixelsPerTile / 2);
-
-            yGraphDiff = worldMapRect.height - yGraphDiff;
-            yGraphDiff += (int) worldMapRect.getY();
-            xGraphDiff += (int) worldMapRect.getX();
-
-            return new Point(xGraphDiff, yGraphDiff);
-        }
-        return null;
     }
 
     @Provides
@@ -387,115 +275,12 @@ public class ShortestPathPlugin extends Plugin {
         }
 
         client.createMenuEntry(position)
-            .setOption(option)
-            .setTarget(target)
-            .setParam0(event.getActionParam0())
-            .setParam1(event.getActionParam1())
-            .setIdentifier(event.getIdentifier())
-            .setType(MenuAction.RUNELITE)
-            .onClick(this::onMenuOptionClicked);
-    }
-
-    private Widget getMinimapDrawWidget() {
-        if (client.isResized()) {
-            if (client.getVarbitValue(Varbits.SIDE_PANELS) == 1) {
-                return client.getWidget(WidgetInfo.RESIZABLE_MINIMAP_DRAW_AREA);
-            }
-            return client.getWidget(WidgetInfo.RESIZABLE_MINIMAP_STONES_DRAW_AREA);
-        }
-        return client.getWidget(WidgetInfo.FIXED_VIEWPORT_MINIMAP_DRAW_AREA);
-    }
-
-    private Shape getMinimapClipAreaSimple() {
-        Widget minimapDrawArea = getMinimapDrawWidget();
-
-        if (minimapDrawArea == null || minimapDrawArea.isHidden()) {
-            return null;
-        }
-
-        Rectangle bounds = minimapDrawArea.getBounds();
-
-        return new Ellipse2D.Double(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
-    }
-
-    public Shape getMinimapClipArea() {
-        Widget minimapWidget = getMinimapDrawWidget();
-
-        if (minimapWidget == null || minimapWidget.isHidden() || !lastMinimapRectangle.equals(minimapWidget.getBounds())) {
-            minimapClipFixed = null;
-            minimapClipResizeable = null;
-            minimapSpriteFixed = null;
-            minimapSpriteResizeable = null;
-            if (minimapWidget != null) {
-                lastMinimapRectangle = minimapWidget.getBounds();
-            }
-        }
-
-        if (client.isResized()) {
-            if (minimapClipResizeable != null) {
-                return minimapClipResizeable;
-            }
-            if (minimapSpriteResizeable == null) {
-                minimapSpriteResizeable = spriteManager.getSprite(SpriteID.RESIZEABLE_MODE_MINIMAP_ALPHA_MASK, 0);
-            }
-            if (minimapSpriteResizeable != null) {
-                minimapClipResizeable = bufferedImageToPolygon(minimapSpriteResizeable);
-                return minimapClipResizeable;
-            }
-            return getMinimapClipAreaSimple();
-        }
-        if (minimapClipFixed != null) {
-            return minimapClipFixed;
-        }
-        if (minimapSpriteFixed == null) {
-            minimapSpriteFixed = spriteManager.getSprite(SpriteID.FIXED_MODE_MINIMAP_ALPHA_MASK, 0);
-        }
-        if (minimapSpriteFixed != null) {
-            minimapClipFixed = bufferedImageToPolygon(minimapSpriteFixed);
-            return minimapClipFixed;
-        }
-        return getMinimapClipAreaSimple();
-    }
-
-    private Polygon bufferedImageToPolygon(BufferedImage image) {
-        Color outsideColour = null;
-        Color previousColour;
-        final int width = image.getWidth();
-        final int height = image.getHeight();
-        List<java.awt.Point> points = new ArrayList<>();
-        for (int y = 0; y < height; y++) {
-            previousColour = outsideColour;
-            for (int x = 0; x < width; x++) {
-                int rgb = image.getRGB(x, y);
-                int a = (rgb & 0xff000000) >>> 24;
-                int r   = (rgb & 0x00ff0000) >> 16;
-                int g = (rgb & 0x0000ff00) >> 8;
-                int b  = (rgb & 0x000000ff) >> 0;
-                Color colour = new Color(r, g, b, a);
-                if (x == 0 && y == 0) {
-                    outsideColour = colour;
-                    previousColour = colour;
-                }
-                if (!colour.equals(outsideColour) && previousColour.equals(outsideColour)) {
-                    points.add(new java.awt.Point(x, y));
-                }
-                if ((colour.equals(outsideColour) || x == (width - 1)) && !previousColour.equals(outsideColour)) {
-                    points.add(0, new java.awt.Point(x, y));
-                }
-                previousColour = colour;
-            }
-        }
-        int offsetX = 0;
-        int offsetY = 0;
-        Widget minimapDrawWidget = getMinimapDrawWidget();
-        if (minimapDrawWidget != null) {
-            offsetX = minimapDrawWidget.getBounds().x;
-            offsetY = minimapDrawWidget.getBounds().y;
-        }
-        Polygon polygon = new Polygon();
-        for (java.awt.Point point : points) {
-            polygon.addPoint(point.x + offsetX, point.y + offsetY);
-        }
-        return polygon;
+                .setOption(option)
+                .setTarget(target)
+                .setParam0(event.getActionParam0())
+                .setParam1(event.getActionParam1())
+                .setIdentifier(event.getIdentifier())
+                .setType(MenuAction.RUNELITE)
+                .onClick(this::onMenuOptionClicked);
     }
 }
