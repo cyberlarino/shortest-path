@@ -36,6 +36,8 @@ public class PathfinderRequestHandler {
     }
 
     public void setStart(final WorldPoint start) {
+        this.start = start;
+        updatePath();
     }
 
     public WorldPoint getStart() {
