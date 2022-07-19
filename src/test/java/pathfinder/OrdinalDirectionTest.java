@@ -3,6 +3,7 @@ package pathfinder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import org.junit.Assert;
 import org.junit.Test;
 import shortestpath.pathfinder.OrdinalDirection;
 
@@ -17,14 +18,14 @@ public class OrdinalDirectionTest {
         assertEquals(OrdinalDirection.SOUTH, result);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void fromPoint_throwsOnInvalidArgument() {
         final Point inputPoint = new Point(10, -10);
-        OrdinalDirection.fromPoint(inputPoint);
+        Assert.assertThrows(RuntimeException.class, () -> OrdinalDirection.fromPoint(inputPoint));
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void fromPoint_throwsOnNullArgument() {
-        OrdinalDirection.fromPoint(null);
+        Assert.assertThrows(RuntimeException.class, () -> OrdinalDirection.fromPoint(null));
     }
 }

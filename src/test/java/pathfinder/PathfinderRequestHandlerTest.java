@@ -1,18 +1,27 @@
 package pathfinder;
 
+import net.runelite.api.World;
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import shortestpath.ClientInfoProvider;
 import shortestpath.pathfinder.Path;
 import shortestpath.pathfinder.PathfinderRequestHandler;
 import shortestpath.pathfinder.PathfinderTask;
 import shortestpath.pathfinder.PathfinderTaskGenerator;
+import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 
 import java.util.Arrays;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -20,21 +29,43 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
+@RunWith(MockitoJUnitRunner.class)
 public class PathfinderRequestHandlerTest {
+    @Mock
     private ClientInfoProvider clientInfoProviderMock;
+    @Mock
     private PathfinderTaskGenerator pathfinderTaskGeneratorMock;
+    @Mock
     private PathfinderTask pathfinderTaskMock;
+
+    @Captor
+    private ArgumentCaptor<WorldPoint> worldPointArgumentCaptor;
 
     private WorldMapProvider worldMapProvider;
     private PathfinderRequestHandler pathfinderRequestHandler;
 
-    public PathfinderRequestHandlerTest() {
-        this.clientInfoProviderMock = mock(ClientInfoProvider.class);
-        this.pathfinderTaskGeneratorMock = mock(PathfinderTaskGenerator.class);
-        this.pathfinderTaskMock = mock(PathfinderTask.class);
-
+    @Before
+    public void setup() {
         this.worldMapProvider = new WorldMapProvider();
-        this.pathfinderRequestHandler = new PathfinderRequestHandler(clientInfoProviderMock, worldMapProvider, pathfinderTaskGeneratorMock);
+        this.pathfinderRequestHandler =
+                new PathfinderRequestHandler(clientInfoProviderMock, worldMapProvider, pathfinderTaskGeneratorMock);
+    }
+
+    private final WorldPoint blockedGeTile = new WorldPoint(3166, 3491, 0);
+
+    private boolean isPointOnGeBorder(final WorldPoint point) {
+        // Tests whether point is on the green border as described in 'testFilteringBlockedPoints.png'
+        final WorldPoint outsideBorderTopLeft = new WorldPoint(3162, 3492, 0);
+        final WorldPoint outsideBorderBottomRight = new WorldPoint(3167, 3487, 0);
+        final boolean pointWithinGeCenter =
+                Util.isPointInsideRectangle(outsideBorderTopLeft, outsideBorderBottomRight, point);
+
+        final WorldPoint blockedRectangleTopLeft = new WorldPoint(3163, 3491, 0);
+        final WorldPoint blockedRectangleBottomRight = new WorldPoint(3166, 3488, 0);
+        final boolean pointWithinBlockedArea =
+                Util.isPointInsideRectangle(blockedRectangleTopLeft, blockedRectangleBottomRight, point);
+
+        return pointWithinGeCenter && !pointWithinBlockedArea;
     }
 
     // Utility functions
@@ -167,16 +198,12 @@ public class PathfinderRequestHandlerTest {
         final Path playerToTargetPath = expectGeneratePath(playerPosition, target);
         pathfinderRequestHandler.setTarget(target);
 
-        // Explicitly run 'Set Start' with new StartPoint
+        // Set-up, Explicitly run 'Set Start' with new StartPoint
         final WorldPoint startPoint = new WorldPoint(3161, 3364, 0);
-        final Path startToTargetPath = new Path(Arrays.asList(startPoint, target));
-
-        final PathfinderTask pathfinderTaskMock1 = mock(PathfinderTask.class);
-        when(pathfinderTaskGeneratorMock.generate(startPoint, target)).thenReturn(pathfinderTaskMock1);
-        when(pathfinderTaskMock1.getPath()).thenReturn(startToTargetPath);
         pathfinderRequestHandler.setStart(startPoint);
 
-        // Then 'Set Target', explicitly set startPoint should be kept
+
+        // 'Set Target', explicitly set startPoint should be kept
         final WorldPoint newTarget = new WorldPoint(3143, 3364, 0);
         final Path startToNewTargetPath = new Path(Arrays.asList(startPoint, newTarget));
 
@@ -193,5 +220,36 @@ public class PathfinderRequestHandlerTest {
         pathfinderRequestHandler.clearPath();
         pathfinderRequestHandler.setTarget(target);
         Assert.assertEquals(playerToTargetPath, pathfinderRequestHandler.getActivePath());
+    }
+
+    @Test
+    public void testFilteringBlockedPoints_setTarget() {
+        // 'Set Target' on a blocked point should move the request point to a close but walkable tile instead.
+        //   testFilteringBlockedPoints.png
+        final WorldPoint somePlayerPosition = new WorldPoint(3166, 3479, 0);
+        when(clientInfoProviderMock.getPlayerLocation()).thenReturn(somePlayerPosition);
+
+        pathfinderRequestHandler.setTarget(blockedGeTile);
+        verify(pathfinderTaskGeneratorMock).generate(any(), worldPointArgumentCaptor.capture());
+
+        final boolean requestedTargetOnGeBorder = isPointOnGeBorder(worldPointArgumentCaptor.getValue());
+        Assert.assertTrue(requestedTargetOnGeBorder);
+    }
+
+    @Test
+    public void testFilteringBlockedPoints_setStart() {
+        // 'Set Start' on a blocked point should move the request point to a close but walkable tile instead.
+        //   testFilteringBlockedPoints.png
+        final WorldPoint somePlayerPosition = new WorldPoint(3166, 3479, 0);
+        when(clientInfoProviderMock.getPlayerLocation()).thenReturn(somePlayerPosition);
+        final WorldPoint someTarget = new WorldPoint(3166, 3481, 0);
+        pathfinderRequestHandler.setTarget(someTarget);
+        reset(pathfinderTaskGeneratorMock); // only setStart() related calls are relevant
+
+        pathfinderRequestHandler.setStart(blockedGeTile);
+        verify(pathfinderTaskGeneratorMock).generate(worldPointArgumentCaptor.capture(), any());
+
+        final boolean requestedStartOnGeBorder = isPointOnGeBorder(worldPointArgumentCaptor.getValue());
+        Assert.assertTrue(requestedStartOnGeBorder);
     }
 }

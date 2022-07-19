@@ -1,8 +1,8 @@
 package shortestpath.pathfinder;
 
-import javax.annotation.Nullable;
 import java.awt.Point;
 import java.util.Arrays;
+import java.util.List;
 
 public enum OrdinalDirection {
     NORTH {
@@ -45,6 +45,11 @@ public enum OrdinalDirection {
             return new Point(-1, -1);
         }
     };
+
+    public static final List<OrdinalDirection> CARDINAL_DIRECTIONS = Arrays.asList(OrdinalDirection.NORTH,
+            OrdinalDirection.EAST,
+            OrdinalDirection.SOUTH,
+            OrdinalDirection.WEST);
 
     public abstract Point toPoint();
 

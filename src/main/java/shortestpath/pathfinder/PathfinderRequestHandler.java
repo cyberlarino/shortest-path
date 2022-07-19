@@ -1,11 +1,16 @@
 package shortestpath.pathfinder;
 
-import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ClientInfoProvider;
-import shortestpath.pathfinder.PathfinderTaskGenerator;
+import shortestpath.utils.Util;
+import shortestpath.worldmap.CollisionMap;
 import shortestpath.worldmap.WorldMapProvider;
 
+import javax.annotation.Nullable;
+import java.awt.Point;
+
+@Slf4j
 public class PathfinderRequestHandler {
     private final ClientInfoProvider clientInfoProvider;
     private final WorldMapProvider worldMapProvider;
@@ -32,13 +37,6 @@ public class PathfinderRequestHandler {
         updatePath();
     }
 
-    public void clearPath() {
-        this.activeTask = null;
-        this.start = null;
-        this.target = null;
-        this.isStartExplicitlySet = false;
-    }
-
     public void setStart(final WorldPoint start) {
         if (target == null) {
             return;
@@ -46,6 +44,13 @@ public class PathfinderRequestHandler {
         this.start = start;
         isStartExplicitlySet = true;
         updatePath();
+    }
+
+    public void clearPath() {
+        this.activeTask = null;
+        this.start = null;
+        this.target = null;
+        this.isStartExplicitlySet = false;
     }
 
     public WorldPoint getStart() {
@@ -69,6 +74,40 @@ public class PathfinderRequestHandler {
     }
 
     private void updatePath() {
+        start = findClosestNonBlockedPoint(start);
+        target = findClosestNonBlockedPoint(target);
+        if (start == null || target == null) {
+            log.debug("No unblocked point close to " + (start == null ? "start" : "target") + " found, cancelling path");
+            clearPath();
+            return;
+        }
+
         activeTask = pathfinderTaskGenerator.generate(start, target);
+        log.debug("New PathfinderTask started: " + Util.worldPointToString(start) + " to " + Util.worldPointToString(target));
+    }
+
+    @Nullable
+    private final static int RADIUS_TO_CHECK = 10;
+    private WorldPoint findClosestNonBlockedPoint(WorldPoint point) {
+        final CollisionMap map = worldMapProvider.getCollisionMap();
+
+        int cardinalDirectionIterator = 0;
+        for (int radius = 1; radius < RADIUS_TO_CHECK; ++cardinalDirectionIterator) {
+            final int cardinalDirectionIndex = cardinalDirectionIterator % OrdinalDirection.CARDINAL_DIRECTIONS.size();
+            final Point direction = OrdinalDirection.CARDINAL_DIRECTIONS.get(cardinalDirectionIndex).toPoint();
+
+            final int directionTraverseLength = Math.floorDiv(cardinalDirectionIterator, 2);
+            point = point.dx(direction.x * directionTraverseLength).dy(direction.y * directionTraverseLength);
+
+            if (!map.isBlocked(point)) {
+                return point;
+            }
+
+            if (cardinalDirectionIterator % OrdinalDirection.CARDINAL_DIRECTIONS.size() == 0) {
+                ++radius;
+            }
+        }
+
+        return null;
     }
 }
