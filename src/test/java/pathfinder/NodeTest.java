@@ -1,13 +1,14 @@
 package pathfinder;
 
 import net.runelite.api.coords.WorldPoint;
-import org.junit.Assert;
 import org.junit.Test;
 import shortestpath.pathfinder.Node;
 import shortestpath.pathfinder.Path;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 public class NodeTest {
     @Test
@@ -25,8 +26,8 @@ public class NodeTest {
         final Node node3 = new Node(points.get(3), node2);
 
         final Path path = node3.getPath();
-        Assert.assertEquals(path.getPoints().get(0), node0.getPosition());
-        Assert.assertEquals(path.getPoints().get(points.size() - 1), node3.getPosition());
-        Assert.assertEquals(path.getPoints().size(), points.size());
+        assertEquals(path.getPoints().get(0), node0.getPosition());
+        assertEquals(path.getPoints().get(points.size() - 1), node3.getPosition());
+        assertEquals(path.getPoints().size(), points.size());
     }
 }

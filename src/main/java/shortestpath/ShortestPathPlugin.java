@@ -152,14 +152,6 @@ public class ShortestPathPlugin extends Plugin {
             setTarget(null);
             return;
         }
-
-//        if (!startPointSet && !isNearPath(currentLocation)) {
-//            if (config.cancelInstead()) {
-//                setTarget(null);
-//                return;
-//            }
-//            currentPath = pathfinderTaskGenerator.generate(currentLocation, currentPath.getTarget());
-//        }
     }
 
     @Subscribe
@@ -202,12 +194,8 @@ public class ShortestPathPlugin extends Plugin {
     }
 
     private void onMenuOptionClicked(MenuEntry entry) {
-        Player localPlayer = client.getLocalPlayer();
-        if (localPlayer == null) {
-            return;
-        }
+        final WorldPoint currentLocation = clientInfoProvider.getPlayerLocation();
 
-        WorldPoint currentLocation = localPlayer.getWorldLocation();
         if (entry.getOption().equals(ADD_START) && entry.getTarget().equals(TRANSPORT)) {
             transportStart = currentLocation;
         }
@@ -234,7 +222,7 @@ public class ShortestPathPlugin extends Plugin {
         }
 
         if (entry.getOption().equals(SET) && entry.getTarget().equals(START)) {
-            setStart(getSelectedWorldPoint());
+            pathfinderRequestHandler.setStart(getSelectedWorldPoint());
         }
 
         if (entry.getOption().equals(CLEAR) && entry.getTarget().equals(PATH)) {
@@ -272,13 +260,6 @@ public class ShortestPathPlugin extends Plugin {
 
             pathfinderRequestHandler.setTarget(target);
         }
-    }
-
-    private void setStart(final WorldPoint start) {
-        if (!pathfinderRequestHandler.hasActivePath()) {
-            return;
-        }
-        pathfinderRequestHandler.setStart(start);
     }
 
     @Provides

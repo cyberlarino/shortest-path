@@ -32,22 +32,27 @@ public class CollisionMap extends SplitFlagMap {
             // To go South-East, either:
             //  (current_tile to South) -> (south_tile to East)
             //  (current_tile to East) -> (east_tile to South)
-            final boolean horizontalPossible = checkDirection(x, y, z, OrdinalDirection.fromPoint(new Point(direction.x, 0))) && checkDirection(x + direction.x, y, z, OrdinalDirection.fromPoint(new Point(0, direction.y)));
-            final boolean verticalPossible = checkDirection(x, y, z, OrdinalDirection.fromPoint(new Point(0, direction.y))) && checkDirection(x, y + direction.y, z, OrdinalDirection.fromPoint(new Point(direction.x, 0)));
+            final boolean horizontalPossible =
+                    checkDirection(x, y, z, OrdinalDirection.fromPoint(new Point(direction.x, 0))) &&
+                    checkDirection(x + direction.x, y, z, OrdinalDirection.fromPoint(new Point(0, direction.y)));
+
+            final boolean verticalPossible =
+                    checkDirection(x, y, z, OrdinalDirection.fromPoint(new Point(0, direction.y))) &&
+                    checkDirection(x, y + direction.y, z, OrdinalDirection.fromPoint(new Point(direction.x, 0)));
             if (!horizontalPossible && !verticalPossible) {
                 return false;
             }
         }
 
         int flag = 0;
-        if (dir == OrdinalDirection.EAST || dir == OrdinalDirection.WEST) {
+        if ((OrdinalDirection.EAST == dir) || (OrdinalDirection.WEST == dir)) {
             flag = 1;
         }
 
-        if (dir == OrdinalDirection.WEST) {
+        if (OrdinalDirection.WEST == dir) {
             x -= 1;
         }
-        else if (dir == OrdinalDirection.SOUTH) {
+        else if (OrdinalDirection.SOUTH == dir) {
             y -= 1;
         }
         return get(x, y, z, flag);
