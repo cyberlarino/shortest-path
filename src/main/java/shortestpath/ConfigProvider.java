@@ -66,4 +66,8 @@ public class ConfigProvider {
     public TileCounter showTileCounter() {
         return pluginConfig.showTileCounter();
     }
+
+    public int ticksWithoutProgressBeforeCancelingTask() {
+        return pluginConfig.abortTicks();
+    }
 }

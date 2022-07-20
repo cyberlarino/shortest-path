@@ -1,6 +1,5 @@
 package pathfinder;
 
-import net.runelite.api.World;
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
 import org.junit.Before;
@@ -21,7 +20,6 @@ import shortestpath.worldmap.WorldMapProvider;
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;

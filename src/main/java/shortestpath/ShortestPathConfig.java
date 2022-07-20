@@ -92,11 +92,26 @@ public interface ShortestPathConfig extends Config {
         return 5;
     }
 
+    @Range(
+            min = -1,
+            max = 20
+    )
+    @ConfigItem(
+            keyName = "abortTicks",
+            name = "Abort ticks",
+            description = "Amount of in-game ticks without progress on the pathfinding before ending path calculation early (-1 for never)",
+            position = 7,
+            section = sectionSettings
+    )
+    default int abortTicks() {
+        return 5;
+    }
+
     @ConfigItem(
         keyName = "showTileCounter",
         name = "Show tile counter",
         description = "Whether to display the number of tiles travelled, number of tiles remaining or disable counting",
-        position = 7,
+        position = 8,
         section = sectionSettings
     )
     default TileCounter showTileCounter() {
@@ -106,7 +121,7 @@ public interface ShortestPathConfig extends Config {
     @ConfigSection(
         name = "Display",
         description = "Options for displaying the path on the world map, minimap and scene tiles",
-        position = 8
+        position = 9
     )
     String sectionDisplay = "sectionDisplay";
 
@@ -114,7 +129,7 @@ public interface ShortestPathConfig extends Config {
         keyName = "drawMap",
         name = "Draw path on world map",
         description = "Whether the path should be drawn on the world map",
-        position = 9,
+        position = 10,
         section = sectionDisplay
     )
     default boolean drawMap() {
@@ -125,7 +140,7 @@ public interface ShortestPathConfig extends Config {
         keyName = "drawMinimap",
         name = "Draw path on minimap",
         description = "Whether the path should be drawn on the minimap",
-        position = 10,
+        position = 11,
         section = sectionDisplay
     )
     default boolean drawMinimap() {
@@ -136,7 +151,7 @@ public interface ShortestPathConfig extends Config {
         keyName = "drawTiles",
         name = "Draw path on tiles",
         description = "Whether the path should be drawn on the game tiles",
-        position = 11,
+        position = 12,
         section = sectionDisplay
     )
     default boolean drawTiles() {
@@ -147,7 +162,7 @@ public interface ShortestPathConfig extends Config {
         keyName = "drawTransports",
         name = "Draw transports",
         description = "Whether transports should be drawn",
-        position = 12,
+        position = 13,
         section = sectionDisplay
     )
     default boolean drawTransports() {
@@ -158,7 +173,7 @@ public interface ShortestPathConfig extends Config {
         keyName = "drawCollisionMap",
         name = "Draw collision map",
         description = "Whether the collision map should be drawn",
-        position = 13,
+        position = 14,
         section = sectionDisplay
     )
     default boolean drawCollisionMap() {
@@ -168,7 +183,7 @@ public interface ShortestPathConfig extends Config {
     @ConfigSection(
         name = "Colours",
         description = "Colours for the path map, minimap and scene tiles",
-        position = 14
+        position = 15
     )
     String sectionColours = "sectionColours";
 
@@ -177,7 +192,7 @@ public interface ShortestPathConfig extends Config {
         keyName = "colourPath",
         name = "Path",
         description = "Colour of the path tiles on the world map, minimap and in the game scene",
-        position = 15,
+        position = 16,
         section = sectionColours
     )
     default Color colourPath() {
@@ -189,7 +204,7 @@ public interface ShortestPathConfig extends Config {
         keyName = "colourPathCalculating",
         name = "Calculating",
         description = "Colour of the path tiles while the pathfinding calculation is in progress",
-        position = 16,
+        position = 17,
         section = sectionColours
     )
     default Color colourPathCalculating() {
@@ -201,7 +216,7 @@ public interface ShortestPathConfig extends Config {
         keyName = "colourTransports",
         name = "Transports",
         description = "Colour of the transport tiles",
-        position = 17,
+        position = 18,
         section = sectionColours
     )
     default Color colourTransports() {
@@ -213,7 +228,7 @@ public interface ShortestPathConfig extends Config {
         keyName = "colourCollisionMap",
         name = "Collision map",
         description = "Colour of the collision map tiles",
-        position = 18,
+        position = 19,
         section = sectionColours
     )
     default Color colourCollisionMap() {

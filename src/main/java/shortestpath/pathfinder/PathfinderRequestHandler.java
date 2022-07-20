@@ -90,9 +90,7 @@ public class PathfinderRequestHandler {
         log.debug("New PathfinderTask started: " + Util.worldPointToString(start) + " to " + Util.worldPointToString(target));
     }
 
-    @Nullable
     private final static int RADIUS_TO_CHECK = 10;
-
     private WorldPoint findClosestNonBlockedPoint(WorldPoint point) {
         final CollisionMap map = worldMapProvider.getCollisionMap();
 
