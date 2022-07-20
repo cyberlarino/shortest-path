@@ -1,6 +1,5 @@
 package pathfinder;
 
-import net.runelite.api.World;
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
 import org.junit.Before;
@@ -21,7 +20,6 @@ import shortestpath.worldmap.WorldMapProvider;
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -251,5 +249,16 @@ public class PathfinderRequestHandlerTest {
 
         final boolean requestedStartOnGeBorder = isPointOnGeBorder(worldPointArgumentCaptor.getValue());
         Assert.assertTrue(requestedStartOnGeBorder);
+    }
+
+    @Test
+    public void testFilteringBlockedPoints_noValidTargetPoint() {
+        // 'Set Target' on a point far away from any unblocked points should not generate a path.
+        final WorldPoint somePlayerPosition = new WorldPoint(3166, 3479, 0);
+        when(clientInfoProviderMock.getPlayerLocation()).thenReturn(somePlayerPosition);
+        final WorldPoint unreachablePoint = new WorldPoint(3510, 3735, 0);
+
+        pathfinderRequestHandler.setTarget(unreachablePoint);
+        verify(pathfinderTaskGeneratorMock, never()).generate(any(), any());
     }
 }

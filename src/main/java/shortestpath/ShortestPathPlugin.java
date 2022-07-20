@@ -33,6 +33,7 @@ import shortestpath.overlays.PathMapOverlay;
 import shortestpath.overlays.PathMinimapOverlay;
 import shortestpath.overlays.PathTileOverlay;
 import shortestpath.pathfinder.PathfinderTaskGenerator;
+import shortestpath.pathfinder.PathfinderTaskHandler;
 import shortestpath.worldmap.Transport;
 import shortestpath.worldmap.WorldMapProvider;
 
@@ -92,6 +93,7 @@ public class ShortestPathPlugin extends Plugin {
     private ClientInfoProvider clientInfoProvider;
     private ConfigProvider configProvider;
     private WorldMapProvider worldMapProvider;
+    private PathfinderTaskHandler pathfinderTaskHandler;
     private PathfinderTaskGenerator pathfinderTaskGenerator;
     private PathfinderRequestHandler pathfinderRequestHandler;
 
@@ -103,7 +105,8 @@ public class ShortestPathPlugin extends Plugin {
         this.worldMapProvider = new WorldMapProvider();
 
         // Pathfinder
-        this.pathfinderTaskGenerator = new PathfinderTaskGenerator(configProvider, worldMapProvider);
+        this.pathfinderTaskHandler = new PathfinderTaskHandler(configProvider);
+        this.pathfinderTaskGenerator = new PathfinderTaskGenerator(configProvider, worldMapProvider, pathfinderTaskHandler);
         this.pathfinderRequestHandler = new PathfinderRequestHandler(clientInfoProvider, worldMapProvider, pathfinderTaskGenerator);
 
         // Overlays
@@ -143,6 +146,8 @@ public class ShortestPathPlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick tick) {
+        pathfinderTaskHandler.evaluateTasks();
+
         if (!pathfinderRequestHandler.hasActivePath()) {
             return;
         }
