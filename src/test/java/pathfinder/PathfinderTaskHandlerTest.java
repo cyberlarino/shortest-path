@@ -11,6 +11,7 @@ import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.Path;
 import shortestpath.pathfinder.PathfinderTask;
 import shortestpath.pathfinder.PathfinderTaskHandler;
+import shortestpath.worldmap.WorldMapProvider;
 
 import java.util.Arrays;
 
@@ -25,13 +26,15 @@ public class PathfinderTaskHandlerTest {
     private PathfinderTask pathfinderTaskMock;
     @Mock
     private ConfigProvider configProviderMock;
+    @Mock
+    private WorldMapProvider worldMapProviderMock;
 
     private final int TICKS_WITHOUT_PROGRESS_BEFORE_CANCEL = 5;
     private PathfinderTaskHandler pathfinderTaskHandler;
 
     @Before
     public void setup() {
-        this.pathfinderTaskHandler = new PathfinderTaskHandler(configProviderMock);
+        this.pathfinderTaskHandler = new PathfinderTaskHandler(configProviderMock, worldMapProviderMock);
 
         when(configProviderMock.ticksWithoutProgressBeforeCancelingTask()).thenReturn(TICKS_WITHOUT_PROGRESS_BEFORE_CANCEL);
     }

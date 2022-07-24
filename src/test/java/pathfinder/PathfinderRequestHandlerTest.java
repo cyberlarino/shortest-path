@@ -13,7 +13,7 @@ import shortestpath.ClientInfoProvider;
 import shortestpath.pathfinder.Path;
 import shortestpath.pathfinder.PathfinderRequestHandler;
 import shortestpath.pathfinder.PathfinderTask;
-import shortestpath.pathfinder.PathfinderTaskGenerator;
+import shortestpath.pathfinder.PathfinderTaskHandler;
 import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 
@@ -32,7 +32,7 @@ public class PathfinderRequestHandlerTest {
     @Mock
     private ClientInfoProvider clientInfoProviderMock;
     @Mock
-    private PathfinderTaskGenerator pathfinderTaskGeneratorMock;
+    private PathfinderTaskHandler pathfinderTaskHandlerMock;
     @Mock
     private PathfinderTask pathfinderTaskMock;
 
@@ -46,7 +46,7 @@ public class PathfinderRequestHandlerTest {
     public void setup() {
         this.worldMapProvider = new WorldMapProvider();
         this.pathfinderRequestHandler =
-                new PathfinderRequestHandler(clientInfoProviderMock, worldMapProvider, pathfinderTaskGeneratorMock);
+                new PathfinderRequestHandler(clientInfoProviderMock, worldMapProvider, pathfinderTaskHandlerMock);
     }
 
     private final WorldPoint blockedGeTile = new WorldPoint(3166, 3491, 0);
@@ -72,7 +72,7 @@ public class PathfinderRequestHandlerTest {
         final Path path = new Path(Arrays.asList(start, target));
 
         when(clientInfoProviderMock.getPlayerLocation()).thenReturn(start);
-        when(pathfinderTaskGeneratorMock.generate(start, target)).thenReturn(pathfinderTaskMock);
+        when(pathfinderTaskHandlerMock.newTask(start, target)).thenReturn(pathfinderTaskMock);
         when(pathfinderTaskMock.getPath()).thenReturn(path);
         return path;
     }
@@ -92,7 +92,7 @@ public class PathfinderRequestHandlerTest {
         // Set target, should request path from player location to target
         pathfinderRequestHandler.setTarget(target);
         verify(clientInfoProviderMock).getPlayerLocation();
-        verify(pathfinderTaskGeneratorMock).generate(start, target);
+        verify(pathfinderTaskHandlerMock).newTask(start, target);
 
         // With path task in place, getActivePath() and isActivePathDone() should return proper values
         final Path activePath = pathfinderRequestHandler.getActivePath();
@@ -173,7 +173,7 @@ public class PathfinderRequestHandlerTest {
         final Path startToTargetPath = new Path(Arrays.asList(startPoint, target));
 
         final PathfinderTask pathfinderTaskMock1 = mock(PathfinderTask.class);
-        when(pathfinderTaskGeneratorMock.generate(startPoint, target)).thenReturn(pathfinderTaskMock1);
+        when(pathfinderTaskHandlerMock.newTask(startPoint, target)).thenReturn(pathfinderTaskMock1);
         when(pathfinderTaskMock1.getPath()).thenReturn(startToTargetPath);
 
 
@@ -206,7 +206,7 @@ public class PathfinderRequestHandlerTest {
         final Path startToNewTargetPath = new Path(Arrays.asList(startPoint, newTarget));
 
         final PathfinderTask pathfinderTaskMock2 = mock(PathfinderTask.class);
-        when(pathfinderTaskGeneratorMock.generate(startPoint, newTarget)).thenReturn(pathfinderTaskMock2);
+        when(pathfinderTaskHandlerMock.newTask(startPoint, newTarget)).thenReturn(pathfinderTaskMock2);
         when(pathfinderTaskMock2.getPath()).thenReturn(startToNewTargetPath);
 
         pathfinderRequestHandler.setTarget(newTarget);
@@ -228,7 +228,7 @@ public class PathfinderRequestHandlerTest {
         when(clientInfoProviderMock.getPlayerLocation()).thenReturn(somePlayerPosition);
 
         pathfinderRequestHandler.setTarget(blockedGeTile);
-        verify(pathfinderTaskGeneratorMock).generate(any(), worldPointArgumentCaptor.capture());
+        verify(pathfinderTaskHandlerMock).newTask(any(), worldPointArgumentCaptor.capture());
 
         final boolean requestedTargetOnGeBorder = isPointOnGeBorder(worldPointArgumentCaptor.getValue());
         Assert.assertTrue(requestedTargetOnGeBorder);
@@ -242,10 +242,10 @@ public class PathfinderRequestHandlerTest {
         when(clientInfoProviderMock.getPlayerLocation()).thenReturn(somePlayerPosition);
         final WorldPoint someTarget = new WorldPoint(3166, 3481, 0);
         pathfinderRequestHandler.setTarget(someTarget);
-        reset(pathfinderTaskGeneratorMock); // only setStart() related calls are relevant
+        reset(pathfinderTaskHandlerMock); // only setStart() related calls are relevant
 
         pathfinderRequestHandler.setStart(blockedGeTile);
-        verify(pathfinderTaskGeneratorMock).generate(worldPointArgumentCaptor.capture(), any());
+        verify(pathfinderTaskHandlerMock).newTask(worldPointArgumentCaptor.capture(), any());
 
         final boolean requestedStartOnGeBorder = isPointOnGeBorder(worldPointArgumentCaptor.getValue());
         Assert.assertTrue(requestedStartOnGeBorder);
@@ -259,6 +259,6 @@ public class PathfinderRequestHandlerTest {
         final WorldPoint unreachablePoint = new WorldPoint(3510, 3735, 0);
 
         pathfinderRequestHandler.setTarget(unreachablePoint);
-        verify(pathfinderTaskGeneratorMock, never()).generate(any(), any());
+        verify(pathfinderTaskHandlerMock, never()).newTask(any(), any());
     }
 }

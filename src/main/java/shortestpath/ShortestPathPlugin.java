@@ -32,7 +32,6 @@ import shortestpath.pathfinder.PathfinderTask;
 import shortestpath.overlays.PathMapOverlay;
 import shortestpath.overlays.PathMinimapOverlay;
 import shortestpath.overlays.PathTileOverlay;
-import shortestpath.pathfinder.PathfinderTaskGenerator;
 import shortestpath.pathfinder.PathfinderTaskHandler;
 import shortestpath.worldmap.Transport;
 import shortestpath.worldmap.WorldMapProvider;
@@ -94,7 +93,6 @@ public class ShortestPathPlugin extends Plugin {
     private ConfigProvider configProvider;
     private WorldMapProvider worldMapProvider;
     private PathfinderTaskHandler pathfinderTaskHandler;
-    private PathfinderTaskGenerator pathfinderTaskGenerator;
     private PathfinderRequestHandler pathfinderRequestHandler;
 
     @Override
@@ -105,9 +103,8 @@ public class ShortestPathPlugin extends Plugin {
         this.worldMapProvider = new WorldMapProvider();
 
         // Pathfinder
-        this.pathfinderTaskHandler = new PathfinderTaskHandler(configProvider);
-        this.pathfinderTaskGenerator = new PathfinderTaskGenerator(configProvider, worldMapProvider, pathfinderTaskHandler);
-        this.pathfinderRequestHandler = new PathfinderRequestHandler(clientInfoProvider, worldMapProvider, pathfinderTaskGenerator);
+        this.pathfinderTaskHandler = new PathfinderTaskHandler(configProvider, worldMapProvider);
+        this.pathfinderRequestHandler = new PathfinderRequestHandler(clientInfoProvider, worldMapProvider, pathfinderTaskHandler);
 
         // Overlays
         this.pathOverlay = new PathTileOverlay(client, pathfinderRequestHandler, worldMapProvider, configProvider);
@@ -211,8 +208,8 @@ public class ShortestPathPlugin extends Plugin {
                     currentLocation.getX() + " " + currentLocation.getY() + " " + currentLocation.getPlane() + " " +
                     lastClick.getOption() + " " + Text.removeTags(lastClick.getTarget()) + " " + lastClick.getIdentifier()
             );
-            Transport transport = new Transport(transportStart, transportEnd);
-            worldMapProvider.getTransports().computeIfAbsent(transportStart, k -> new ArrayList<>()).add(transport);
+            final Transport transport = new Transport(transportStart, transportEnd);
+            worldMapProvider.getWorldMap().addTransport(transport);
         }
 
         if (entry.getOption().equals("Copy Position")) {

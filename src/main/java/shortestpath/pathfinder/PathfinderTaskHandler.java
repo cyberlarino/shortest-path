@@ -6,6 +6,7 @@ import lombok.Value;
 import net.runelite.api.World;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ConfigProvider;
+import shortestpath.worldmap.WorldMapProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,20 +22,20 @@ public class PathfinderTaskHandler {
         @Setter
         private int ticksSinceBetterPath;
 
-        PathfinderTaskInfo(final PathfinderTask task,
-                           final int bestDistance,
-                           final int ticksSinceBetterPath) {
+        PathfinderTaskInfo(final PathfinderTask task) {
             this.task = task;
-            this.bestDistance = bestDistance;
-            this.ticksSinceBetterPath = ticksSinceBetterPath;
+            this.bestDistance = Integer.MAX_VALUE;
+            this.ticksSinceBetterPath = 1;
         }
     }
 
     final ConfigProvider configProvider;
+    final WorldMapProvider worldMapProvider;
     private final List<PathfinderTaskInfo> pathfinderTasks;
 
-    public PathfinderTaskHandler(final ConfigProvider configProvider) {
+    public PathfinderTaskHandler(final ConfigProvider configProvider, final WorldMapProvider worldMapProvider) {
         this.configProvider = configProvider;
+        this.worldMapProvider = worldMapProvider;
         this.pathfinderTasks = new ArrayList<>();
     }
 
@@ -55,8 +56,15 @@ public class PathfinderTaskHandler {
         }
     }
 
+    public PathfinderTask newTask(final WorldPoint start, final WorldPoint target) {
+        final PathfinderTask newTask = new PathfinderTask(worldMapProvider.getWorldMap(), configProvider.getPathFinderConfig(), start, target);
+        final PathfinderTaskInfo taskInfo = new PathfinderTaskInfo(newTask);
+        pathfinderTasks.add(taskInfo);
+        return newTask;
+    }
+
     public void add(final PathfinderTask task) {
-        final PathfinderTaskInfo taskInfo = new PathfinderTaskInfo(task, Integer.MAX_VALUE, 1);
+        final PathfinderTaskInfo taskInfo = new PathfinderTaskInfo(task);
         pathfinderTasks.add(taskInfo);
     }
 

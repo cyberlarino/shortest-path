@@ -4,17 +4,16 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ClientInfoProvider;
 import shortestpath.utils.Util;
-import shortestpath.worldmap.CollisionMap;
+import shortestpath.worldmap.WorldMap;
 import shortestpath.worldmap.WorldMapProvider;
 
-import javax.annotation.Nullable;
 import java.awt.Point;
 
 @Slf4j
 public class PathfinderRequestHandler {
     private final ClientInfoProvider clientInfoProvider;
     private final WorldMapProvider worldMapProvider;
-    private final PathfinderTaskGenerator pathfinderTaskGenerator;
+    final PathfinderTaskHandler pathfinderTaskHandler;
 
     private PathfinderTask activeTask = null;
     private WorldPoint start = null;
@@ -23,10 +22,10 @@ public class PathfinderRequestHandler {
 
     public PathfinderRequestHandler(final ClientInfoProvider clientInfoProvider,
                                     final WorldMapProvider worldMapProvider,
-                                    final PathfinderTaskGenerator pathfinderTaskGenerator) {
+                                    final PathfinderTaskHandler pathfinderTaskHandler) {
         this.clientInfoProvider = clientInfoProvider;
         this.worldMapProvider = worldMapProvider;
-        this.pathfinderTaskGenerator = pathfinderTaskGenerator;
+        this.pathfinderTaskHandler = pathfinderTaskHandler;
     }
 
     public void setTarget(final WorldPoint target) {
@@ -86,13 +85,13 @@ public class PathfinderRequestHandler {
             return;
         }
 
-        activeTask = pathfinderTaskGenerator.generate(start, target);
+        activeTask = pathfinderTaskHandler.newTask(start, target);
         log.debug("New PathfinderTask started: " + Util.worldPointToString(start) + " to " + Util.worldPointToString(target));
     }
 
     private final static int RADIUS_TO_CHECK = 10;
     private WorldPoint findClosestNonBlockedPoint(WorldPoint point) {
-        final CollisionMap map = worldMapProvider.getCollisionMap();
+        final WorldMap map = worldMapProvider.getWorldMap();
 
         int cardinalDirectionIterator = 0;
         for (int radius = 1; radius < RADIUS_TO_CHECK; ++cardinalDirectionIterator) {

@@ -49,7 +49,7 @@ public class NodeGraph {
 
     private void addNeighbors(final Node node, final Predicate<WorldPoint> neighborPredicate, final Predicate<Transport> transportPredicate) {
         for (OrdinalDirection direction : OrdinalDirection.values()) {
-            if (worldMap.getCollisionMap().checkDirection(node.getPosition(), direction)) {
+            if (worldMap.checkDirection(node.getPosition(), direction)) {
                 final WorldPoint neighbor = new WorldPoint(node.getPosition().getX() + direction.toPoint().x, node.getPosition().getY() + direction.toPoint().y, node.getPosition().getPlane());
                 if (neighborPredicate.test(neighbor)) {
                     addNeighbor(node, neighbor);
@@ -57,7 +57,7 @@ public class NodeGraph {
             }
         }
 
-        for (Transport transport : worldMap.getTransports().getOrDefault(node.getPosition(), new ArrayList<>())) {
+        for (Transport transport : worldMap.getTransports(node.getPosition())) {
             if (transportPredicate.test(transport)) {
                 addNeighbor(node, transport.getDestination());
             }

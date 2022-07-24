@@ -50,11 +50,11 @@ public class PathfinderTest {
 
     private boolean isPathValid(final Path path) {
         final Predicate<WorldPoint> pointTransportOrNotBlocked = worldPoint -> {
-            if (!worldMapProvider.getCollisionMap().isBlocked(worldPoint)) {
+            if (!worldMapProvider.getWorldMap().isBlocked(worldPoint)) {
                 return true;
             }
 
-            if (worldMapProvider.getTransports().getOrDefault(worldPoint, new ArrayList<>()).size() != 0) {
+            if (worldMapProvider.getWorldMap().getTransports(worldPoint).size() != 0) {
                 return true;
             }
             return false;
@@ -71,7 +71,7 @@ public class PathfinderTest {
             if (point.distanceTo(nextPoint) > 1) {
                 // A 'jump' in the path, either transport was used, or path isn't connected properly
                 boolean pathTransportUsed = false;
-                for (Transport transport : worldMapProvider.getTransports().getOrDefault(point, new ArrayList<>())) {
+                for (Transport transport : worldMapProvider.getWorldMap().getTransports(point)) {
                     if (transport.getDestination().equals(nextPoint)) {
                         pathTransportUsed = true;
                         break;

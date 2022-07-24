@@ -25,12 +25,4 @@ public class WorldMapProvider {
         final Map<WorldPoint, List<Transport>> transports = Transport.fromFile(transportsPath);
         this.worldMap = new WorldMap(map, transports);
     }
-
-    public CollisionMap getCollisionMap() {
-        return worldMap.getCollisionMap();
-    }
-
-    public Map<WorldPoint, List<Transport>> getTransports() {
-        return worldMap.getTransports();
-    }
 }

@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +49,7 @@ public class Transport {
         this(origin, destination, 0, 0, 0);
     }
 
-    Transport(final String line) {
+    public static Transport fromString(final String line) {
         final String DELIM = " ";
 
         String[] parts = line.split("\t");
@@ -58,11 +57,11 @@ public class Transport {
         String[] parts_origin = parts[0].split(DELIM);
         String[] parts_destination = parts[1].split(DELIM);
 
-        origin = new WorldPoint(
+        final WorldPoint origin = new WorldPoint(
                 Integer.parseInt(parts_origin[0]),
                 Integer.parseInt(parts_origin[1]),
                 Integer.parseInt(parts_origin[2]));
-        destination = new WorldPoint(
+        final WorldPoint destination = new WorldPoint(
                 Integer.parseInt(parts_destination[0]),
                 Integer.parseInt(parts_destination[1]),
                 Integer.parseInt(parts_destination[2]));
@@ -85,9 +84,7 @@ public class Transport {
             }
         }
 
-        agilityLevelRequired = agilityLevel;
-        rangedLevelRequired = rangedLevel;
-        strengthLevelRequired = strengthLevel;
+        return new Transport(origin, destination, agilityLevel, rangedLevel, strengthLevel);
     }
 
     public static Map<WorldPoint, List<Transport>> fromFile(final Path filepath) {
@@ -103,8 +100,8 @@ public class Transport {
                     continue;
                 }
 
-                Transport transport = new Transport(line);
-                WorldPoint origin = transport.getOrigin();
+                final Transport transport = Transport.fromString(line);
+                final WorldPoint origin = transport.getOrigin();
                 transports.computeIfAbsent(origin, k -> new ArrayList<>()).add(transport);
             }
         } catch (IOException e) {

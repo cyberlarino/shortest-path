@@ -36,11 +36,11 @@ public class PathMapOverlay extends Overlay {
     private Area mapClipArea;
 
     public PathMapOverlay(final Client client,
-                   final WorldMapOverlay worldMapOverlay,
-                   final ClientInfoProvider clientInfoProvider,
-                   final PathfinderRequestHandler pathfinderRequestHandler,
-                   final WorldMapProvider worldMapProvider,
-                   final ConfigProvider configProvider) {
+                          final WorldMapOverlay worldMapOverlay,
+                          final ClientInfoProvider clientInfoProvider,
+                          final PathfinderRequestHandler pathfinderRequestHandler,
+                          final WorldMapProvider worldMapProvider,
+                          final ConfigProvider configProvider) {
         this.client = client;
         this.worldMapOverlay = worldMapOverlay;
         this.clientInfoProvider = clientInfoProvider;
@@ -74,7 +74,7 @@ public class PathMapOverlay extends Overlay {
             for (int x = extent.x; x < (extent.x + extent.width + 1); x++) {
                 for (int y = extent.y - extent.height; y < (extent.y + 1); y++) {
                     WorldPoint point = new WorldPoint(x, y, z);
-                    if (worldMapProvider.getCollisionMap().isBlocked(point)) {
+                    if (worldMapProvider.getWorldMap().isBlocked(point)) {
                         drawOnMap(graphics, point);
                     }
                 }
@@ -83,20 +83,15 @@ public class PathMapOverlay extends Overlay {
 
         if (configProvider.drawTransports()) {
             graphics.setColor(Color.WHITE);
-            for (WorldPoint a : worldMapProvider.getTransports().keySet()) {
-                Point mapA = worldMapOverlay.mapWorldPointToGraphicsPoint(a);
-                if (mapA == null) {
+            for (Transport transport : worldMapProvider.getWorldMap().getTransports()) {
+                Point transportOrigin = worldMapOverlay.mapWorldPointToGraphicsPoint(transport.getOrigin());
+                Point transportDestination = worldMapOverlay.mapWorldPointToGraphicsPoint(transport.getDestination());
+
+                if (transportOrigin == null || transportDestination == null) {
                     continue;
                 }
-
-                for (Transport b : worldMapProvider.getTransports().get(a)) {
-                    Point mapB = worldMapOverlay.mapWorldPointToGraphicsPoint(b.getOrigin());
-                    if (mapB == null) {
-                        continue;
-                    }
-
-                    graphics.drawLine(mapA.getX(), mapA.getY(), mapB.getX(), mapB.getY());
-                }
+                graphics.drawLine(transportOrigin.getX(), transportOrigin.getY(),
+                        transportDestination.getX(), transportDestination.getY());
             }
         }
 
