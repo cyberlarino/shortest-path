@@ -17,10 +17,10 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayPriority;
 import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.OrdinalDirection;
-import shortestpath.pathfinder.Path;
+import shortestpath.pathfinder.path.Movement;
+import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.PathfinderRequestHandler;
-import shortestpath.worldmap.CollisionMap;
-import shortestpath.worldmap.Transport;
+import shortestpath.pathfinder.path.Transport;
 import shortestpath.worldmap.WorldMap;
 import shortestpath.worldmap.WorldMapProvider;
 
@@ -131,8 +131,8 @@ public class PathTileOverlay extends Overlay {
 
             final Path path = pathfinderRequestHandler.getActivePath();
             int counter = 0;
-            for (WorldPoint point : path.getPoints()) {
-                drawTile(graphics, point, color, counter++);
+            for (Movement movement : path.getMovements()) {
+                drawTile(graphics, movement.getDestination(), color, counter++);
             }
         }
 
@@ -179,7 +179,7 @@ public class PathTileOverlay extends Overlay {
 
         if (counter >= 0 && !TileCounter.DISABLED.equals(configProvider.showTileCounter())) {
             if (TileCounter.REMAINING.equals(configProvider.showTileCounter())) {
-                counter = pathfinderRequestHandler.getActivePath().getPoints().size() - counter - 1;
+                counter = pathfinderRequestHandler.getActivePath().getMovements().size() - counter - 1;
             }
             String counterText = Integer.toString(counter);
             graphics.setColor(Color.WHITE);

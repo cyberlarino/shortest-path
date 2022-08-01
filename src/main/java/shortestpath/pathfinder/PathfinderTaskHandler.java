@@ -3,14 +3,17 @@ package shortestpath.pathfinder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.World;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ConfigProvider;
 import shortestpath.worldmap.WorldMapProvider;
+import shortestpath.worldmap.sections.SectionMapper;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class PathfinderTaskHandler {
     private static class PathfinderTaskInfo {
         @Getter
@@ -31,11 +34,13 @@ public class PathfinderTaskHandler {
 
     final ConfigProvider configProvider;
     final WorldMapProvider worldMapProvider;
+    final SectionMapper sectionMapper;
     private final List<PathfinderTaskInfo> pathfinderTasks;
 
-    public PathfinderTaskHandler(final ConfigProvider configProvider, final WorldMapProvider worldMapProvider) {
+    public PathfinderTaskHandler(final ConfigProvider configProvider, final WorldMapProvider worldMapProvider, final SectionMapper sectionMapper) {
         this.configProvider = configProvider;
         this.worldMapProvider = worldMapProvider;
+        this.sectionMapper = sectionMapper;
         this.pathfinderTasks = new ArrayList<>();
     }
 
@@ -60,6 +65,11 @@ public class PathfinderTaskHandler {
         final PathfinderTask newTask = new PathfinderTask(worldMapProvider.getWorldMap(), configProvider.getPathFinderConfig(), start, target);
         final PathfinderTaskInfo taskInfo = new PathfinderTaskInfo(newTask);
         pathfinderTasks.add(taskInfo);
+
+        final Integer startId = this.sectionMapper.getSectionId(start);
+        final Integer targetId = this.sectionMapper.getSectionId(target);
+        log.debug("New task. Start section: " + startId + ", target: " + targetId);
+
         return newTask;
     }
 
@@ -75,9 +85,8 @@ public class PathfinderTaskHandler {
     private static void evaluateTaskHasBetterPath(final PathfinderTaskInfo task) {
         // Check if last point in Path is closer to target than last time (tick).
         // If not then increment counter.
-        final List<WorldPoint> taskPathPoints = task.getTask().getPath().getPoints();
-        final WorldPoint bestPathEnd = taskPathPoints.get(taskPathPoints.size() - 1);
-        final int distanceFromTarget = task.getTask().getTarget().distanceTo(bestPathEnd);
+        final WorldPoint bestPathDestination = task.getTask().getPath().getDestination();
+        final int distanceFromTarget = task.getTask().getTarget().distanceTo(bestPathDestination);
 
         if (distanceFromTarget < task.getBestDistance()) {
             task.setBestDistance(distanceFromTarget);

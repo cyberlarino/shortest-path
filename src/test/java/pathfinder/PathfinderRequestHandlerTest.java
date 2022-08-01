@@ -10,10 +10,11 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import shortestpath.ClientInfoProvider;
-import shortestpath.pathfinder.Path;
+import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.PathfinderRequestHandler;
 import shortestpath.pathfinder.PathfinderTask;
 import shortestpath.pathfinder.PathfinderTaskHandler;
+import shortestpath.pathfinder.path.Walk;
 import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 
@@ -51,6 +52,7 @@ public class PathfinderRequestHandlerTest {
 
     private final WorldPoint blockedGeTile = new WorldPoint(3166, 3491, 0);
 
+    // Utility functions
     private boolean isPointOnGeBorder(final WorldPoint point) {
         // Tests whether point is on the green border as described in 'testFilteringBlockedPoints.png'
         final WorldPoint outsideBorderTopLeft = new WorldPoint(3162, 3492, 0);
@@ -66,10 +68,16 @@ public class PathfinderRequestHandlerTest {
         return pointWithinGeCenter && !pointWithinBlockedArea;
     }
 
-    // Utility functions
+
+    private static Path createFakePath(final WorldPoint start, final WorldPoint target) {
+        final Walk origin = new Walk(start, start);
+        final Walk destination = new Walk(start, target);
+        return new Path(Arrays.asList(origin, destination));
+    }
+
     private Path expectGeneratePath(final WorldPoint start, final WorldPoint target) {
         // Test helper function, sets up mocks to generate start-target PathfinderTask
-        final Path path = new Path(Arrays.asList(start, target));
+        final Path path = createFakePath(start, target);
 
         when(clientInfoProviderMock.getPlayerLocation()).thenReturn(start);
         when(pathfinderTaskHandlerMock.newTask(start, target)).thenReturn(pathfinderTaskMock);
@@ -170,7 +178,7 @@ public class PathfinderRequestHandlerTest {
 
         // Expect a new task to be generated, and output the start-target path
         final WorldPoint startPoint = new WorldPoint(3161, 3364, 0);
-        final Path startToTargetPath = new Path(Arrays.asList(startPoint, target));
+        final Path startToTargetPath = createFakePath(startPoint, target);
 
         final PathfinderTask pathfinderTaskMock1 = mock(PathfinderTask.class);
         when(pathfinderTaskHandlerMock.newTask(startPoint, target)).thenReturn(pathfinderTaskMock1);
@@ -203,7 +211,7 @@ public class PathfinderRequestHandlerTest {
 
         // 'Set Target', explicitly set startPoint should be kept
         final WorldPoint newTarget = new WorldPoint(3143, 3364, 0);
-        final Path startToNewTargetPath = new Path(Arrays.asList(startPoint, newTarget));
+        final Path startToNewTargetPath = createFakePath(startPoint, newTarget);
 
         final PathfinderTask pathfinderTaskMock2 = mock(PathfinderTask.class);
         when(pathfinderTaskHandlerMock.newTask(startPoint, newTarget)).thenReturn(pathfinderTaskMock2);

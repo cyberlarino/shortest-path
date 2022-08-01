@@ -2,7 +2,7 @@ package shortestpath.worldmap;
 
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.WorldListLoad;
+import shortestpath.pathfinder.path.Transport;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

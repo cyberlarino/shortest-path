@@ -1,6 +1,6 @@
 package shortestpath.pathfinder;
 
-import shortestpath.worldmap.Transport;
+import shortestpath.pathfinder.path.Transport;
 
 import java.util.function.Predicate;
 

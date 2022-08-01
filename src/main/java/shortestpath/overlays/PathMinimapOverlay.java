@@ -18,6 +18,7 @@ import net.runelite.client.ui.overlay.OverlayPriority;
 import shortestpath.ClientInfoProvider;
 import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.PathfinderRequestHandler;
+import shortestpath.pathfinder.path.Movement;
 import shortestpath.worldmap.WorldMapProvider;
 
 public class PathMinimapOverlay extends Overlay {
@@ -56,15 +57,15 @@ public class PathMinimapOverlay extends Overlay {
         graphics.setClip(clientInfoProvider.getMinimapClipArea());
 
         if (pathfinderRequestHandler.isActivePathDone()) {
-            List<WorldPoint> pathPoints = pathfinderRequestHandler.getActivePath().getPoints();
-            if (pathPoints != null) {
-                for (WorldPoint pathPoint : pathPoints) {
-                    if (pathPoint.getPlane() != client.getPlane()) {
+            List<Movement> pathMovements = pathfinderRequestHandler.getActivePath().getMovements();
+            if (pathMovements != null) {
+                for (Movement movement : pathMovements) {
+                    if (movement.getDestination().getPlane() != client.getPlane()) {
                         continue;
                     }
 
                     final Color pathColor = (pathfinderRequestHandler.isActivePathDone() ? configProvider.colorPath() : configProvider.colorPathCalculating());
-                    drawOnMinimap(graphics, pathPoint, pathColor);
+                    drawOnMinimap(graphics, movement.getDestination(), pathColor);
                 }
             }
         }

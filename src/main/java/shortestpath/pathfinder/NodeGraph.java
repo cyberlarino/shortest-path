@@ -2,10 +2,11 @@ package shortestpath.pathfinder;
 
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-import shortestpath.worldmap.Transport;
+import shortestpath.pathfinder.path.Movement;
+import shortestpath.pathfinder.path.Transport;
+import shortestpath.pathfinder.path.Walk;
 import shortestpath.worldmap.WorldMap;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,26 +41,28 @@ public class NodeGraph {
         addNeighbors(node, neighborPredicate, transportPredicate);
     }
 
-    private void addNeighbor(final Node node, final WorldPoint neighbor) {
-        if (!visited.add(neighbor)) {
+    private void addNeighbor(final Node node, final Movement neighborMovement) {
+        if (!visited.add(neighborMovement.getDestination())) {
             return;
         }
-        boundary.add(new Node(neighbor, node));
+        boundary.add(new Node(neighborMovement, node));
     }
 
     private void addNeighbors(final Node node, final Predicate<WorldPoint> neighborPredicate, final Predicate<Transport> transportPredicate) {
+        final WorldPoint currentPoint = node.getMovement().getDestination();
         for (OrdinalDirection direction : OrdinalDirection.values()) {
-            if (worldMap.checkDirection(node.getPosition(), direction)) {
-                final WorldPoint neighbor = new WorldPoint(node.getPosition().getX() + direction.toPoint().x, node.getPosition().getY() + direction.toPoint().y, node.getPosition().getPlane());
+            if (worldMap.checkDirection(currentPoint, direction)) {
+                final WorldPoint neighbor = new WorldPoint(currentPoint.getX() + direction.toPoint().x, currentPoint.getY() + direction.toPoint().y, currentPoint.getPlane());
+                final Walk walkMovement = new Walk(currentPoint, neighbor);
                 if (neighborPredicate.test(neighbor)) {
-                    addNeighbor(node, neighbor);
+                    addNeighbor(node, walkMovement);
                 }
             }
         }
 
-        for (Transport transport : worldMap.getTransports(node.getPosition())) {
+        for (Transport transport : worldMap.getTransports(currentPoint)) {
             if (transportPredicate.test(transport)) {
-                addNeighbor(node, transport.getDestination());
+                addNeighbor(node, transport);
             }
         }
     }

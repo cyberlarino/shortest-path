@@ -3,6 +3,7 @@ package shortestpath.pathfinder;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ClientInfoProvider;
+import shortestpath.pathfinder.path.Path;
 import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMap;
 import shortestpath.worldmap.WorldMapProvider;

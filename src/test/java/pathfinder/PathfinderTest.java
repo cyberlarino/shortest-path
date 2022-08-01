@@ -3,11 +3,13 @@ package pathfinder;
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
 import org.junit.Test;
-import shortestpath.pathfinder.Path;
-import shortestpath.worldmap.Transport;
+import shortestpath.pathfinder.path.Movement;
+import shortestpath.pathfinder.path.Path;
+import shortestpath.pathfinder.path.Transport;
 import shortestpath.pathfinder.Node;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.PathfinderTask;
+import shortestpath.pathfinder.path.Walk;
 import shortestpath.worldmap.WorldMapProvider;
 
 import java.util.ArrayList;
@@ -49,24 +51,27 @@ public class PathfinderTest {
     }
 
     private boolean isPathValid(final Path path) {
-        final Predicate<WorldPoint> pointTransportOrNotBlocked = worldPoint -> {
-            if (!worldMapProvider.getWorldMap().isBlocked(worldPoint)) {
+        final Predicate<Movement> movementTransportOrNotBlocked = movement -> {
+            final WorldPoint movementOrigin = movement.getOrigin();
+            final WorldPoint movementDestination = movement.getDestination();
+            if (!worldMapProvider.getWorldMap().isBlocked(movementDestination)) {
                 return true;
             }
 
-            if (worldMapProvider.getWorldMap().getTransports(worldPoint).size() != 0) {
-                return true;
-            }
-            return false;
+            return worldMapProvider.getWorldMap().getTransports(movementOrigin).size() != 0;
         };
 
-        if (!path.getPoints().stream().allMatch(pointTransportOrNotBlocked)) {
+        if (!path.getMovements().stream().allMatch(movementTransportOrNotBlocked)) {
             return false;
         }
 
-        for (int i = 0; i < path.getPoints().size() - 1; ++i) {
-            final WorldPoint point = path.getPoints().get(i);
-            final WorldPoint nextPoint = path.getPoints().get(i + 1);
+        for (int i = 0; i < path.getMovements().size() - 1; ++i) {
+            if (!path.getMovements().get(i).getDestination().equals(path.getMovements().get(i + 1).getOrigin())) {
+                return false;
+            }
+
+            final WorldPoint point = path.getMovements().get(i).getDestination();
+            final WorldPoint nextPoint = path.getMovements().get(i + 1).getDestination();
 
             if (point.distanceTo(nextPoint) > 1) {
                 // A 'jump' in the path, either transport was used, or path isn't connected properly
@@ -86,9 +91,9 @@ public class PathfinderTest {
     }
 
     private static boolean anyOfThePointsInPath(final List<WorldPoint> points, final Path path) {
-        return path.getPoints().stream().anyMatch(pathPoint -> {
+        return path.getMovements().stream().anyMatch(movement -> {
             for (WorldPoint listPoint : points) {
-                if (listPoint.equals(pathPoint)) {
+                if (listPoint.equals(movement.getDestination())) {
                     return true;
                 }
             }
@@ -113,8 +118,8 @@ public class PathfinderTest {
         Assert.assertTrue(calculatedPathInTime);
 
         Path path = task.getPath();
-        Assert.assertEquals(path.getPoints().get(0), start);
-        Assert.assertEquals(path.getPoints().get(path.getPoints().size() - 1), target);
+        Assert.assertEquals(path.getMovements().get(0).getOrigin(), start);
+        Assert.assertEquals(path.getMovements().get(path.getMovements().size() - 1).getDestination(), target);
         Assert.assertTrue(isPathValid(path));
     }
 
@@ -147,8 +152,8 @@ public class PathfinderTest {
         // Test if 'isPathValid' detects not traversable path
         final WorldPoint start = new WorldPoint(3171, 3383, 0);
         final WorldPoint target = new WorldPoint(3171, 3404, 0);
-        Node startNode = new Node(start, null);
-        Node targetNode = new Node(target, startNode);
+        Node startNode = Node.createInitialNode(start);
+        Node targetNode = new Node(new Walk(start, target), startNode);
 
         Path path = targetNode.getPath();
         Assert.assertFalse(isPathValid(path));
@@ -171,8 +176,8 @@ public class PathfinderTest {
         Assert.assertTrue(calculatedPathInTime);
 
         Path path = task.getPath();
-        Assert.assertEquals(path.getPoints().get(0), start);
-        Assert.assertEquals(path.getPoints().get(path.getPoints().size() - 1), target);
+        Assert.assertEquals(path.getMovements().get(0).getOrigin(), start);
+        Assert.assertEquals(path.getMovements().get(path.getMovements().size() - 1).getDestination(), target);
         Assert.assertTrue(isPathValid(path));
 
         Assert.assertFalse(varrockSteppingStoneShortcutInPath(path));
@@ -194,10 +199,12 @@ public class PathfinderTest {
         final boolean calculatedPathInTime = waitForPathfinderTaskCompletion(task);
         Assert.assertTrue(calculatedPathInTime);
 
+
         Path path = task.getPath();
-        Assert.assertEquals(path.getPoints().get(0), start);
-        Assert.assertEquals(path.getPoints().get(path.getPoints().size() - 1), target);
+        Assert.assertEquals(path.getMovements().get(0).getOrigin(), start);
+        Assert.assertEquals(path.getMovements().get(path.getMovements().size() - 1).getDestination(), target);
         Assert.assertTrue(isPathValid(path));
+
 
         Assert.assertTrue(varrockSteppingStoneShortcutInPath(path));
     }

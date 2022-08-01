@@ -1,4 +1,4 @@
-package shortestpath.worldmap;
+package shortestpath.pathfinder.path;
 
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
@@ -16,7 +16,12 @@ import java.util.Scanner;
 /**
  * This class represents a travel point between two WorldPoints.
  */
-public class Transport {
+public class Transport implements Movement {
+    @Override
+    public MovementType getType() {
+        return MovementType.TRANSPORT;
+    }
+
     /** The starting point of this transport */
     @Getter
     private final WorldPoint origin;

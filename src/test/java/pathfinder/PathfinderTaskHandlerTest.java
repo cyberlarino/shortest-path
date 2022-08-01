@@ -8,10 +8,12 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import shortestpath.ConfigProvider;
-import shortestpath.pathfinder.Path;
+import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.PathfinderTask;
 import shortestpath.pathfinder.PathfinderTaskHandler;
+import shortestpath.pathfinder.path.Walk;
 import shortestpath.worldmap.WorldMapProvider;
+import shortestpath.worldmap.sections.SectionMapper;
 
 import java.util.Arrays;
 
@@ -28,15 +30,24 @@ public class PathfinderTaskHandlerTest {
     private ConfigProvider configProviderMock;
     @Mock
     private WorldMapProvider worldMapProviderMock;
+    @Mock
+    private SectionMapper sectionMapperMock;
 
     private final int TICKS_WITHOUT_PROGRESS_BEFORE_CANCEL = 5;
     private PathfinderTaskHandler pathfinderTaskHandler;
 
     @Before
     public void setup() {
-        this.pathfinderTaskHandler = new PathfinderTaskHandler(configProviderMock, worldMapProviderMock);
+        this.pathfinderTaskHandler = new PathfinderTaskHandler(configProviderMock, worldMapProviderMock, sectionMapperMock);
 
         when(configProviderMock.ticksWithoutProgressBeforeCancelingTask()).thenReturn(TICKS_WITHOUT_PROGRESS_BEFORE_CANCEL);
+    }
+
+    // Utility functions
+    private static Path createFakePath(final WorldPoint start, final WorldPoint target) {
+        final Walk origin = new Walk(start, start);
+        final Walk destination = new Walk(start, target);
+        return new Path(Arrays.asList(origin, destination));
     }
 
     @Test
@@ -47,7 +58,7 @@ public class PathfinderTaskHandlerTest {
         when(pathfinderTaskMock.getTarget()).thenReturn(target);
         when(pathfinderTaskMock.isDone()).thenReturn(false);
 
-        final Path noProgressPath = new Path(Arrays.asList(start, start));
+        final Path noProgressPath = createFakePath(start, start);
 
         // Add task to list of tasks to manage
         pathfinderTaskHandler.add(pathfinderTaskMock);
@@ -79,8 +90,8 @@ public class PathfinderTaskHandlerTest {
         final WorldPoint target = new WorldPoint(10, 0, 0);
         when(pathfinderTaskMock.getTarget()).thenReturn(target);
 
-        final Path noProgressPath = new Path(Arrays.asList(start, start));
-        final Path someProgressPath = new Path(Arrays.asList(start, someProgressPoint));
+        final Path noProgressPath = createFakePath(start, start);
+        final Path someProgressPath = createFakePath(start, someProgressPoint);
 
         // Add task to list of tasks to manage
         pathfinderTaskHandler.add(pathfinderTaskMock);

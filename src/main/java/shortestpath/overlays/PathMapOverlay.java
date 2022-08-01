@@ -1,7 +1,5 @@
 package shortestpath.overlays;
 
-import com.google.inject.Inject;
-
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
@@ -20,9 +18,10 @@ import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
 import shortestpath.ClientInfoProvider;
 import shortestpath.ConfigProvider;
-import shortestpath.pathfinder.Path;
+import shortestpath.pathfinder.path.Movement;
+import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.PathfinderRequestHandler;
-import shortestpath.worldmap.Transport;
+import shortestpath.pathfinder.path.Transport;
 import shortestpath.worldmap.WorldMapProvider;
 
 public class PathMapOverlay extends Overlay {
@@ -100,8 +99,8 @@ public class PathMapOverlay extends Overlay {
             graphics.setColor(done ? configProvider.colorPath() : configProvider.colorPathCalculating());
             final Path path = pathfinderRequestHandler.getActivePath();
             if (path != null) {
-                for (WorldPoint point : path.getPoints()) {
-                    drawOnMap(graphics, point);
+                for (Movement movement : path.getMovements()) {
+                    drawOnMap(graphics, movement.getDestination());
                 }
             }
         }

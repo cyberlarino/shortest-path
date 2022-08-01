@@ -3,7 +3,8 @@ package pathfinder;
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Test;
 import shortestpath.pathfinder.Node;
-import shortestpath.pathfinder.Path;
+import shortestpath.pathfinder.path.Path;
+import shortestpath.pathfinder.path.Walk;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,14 +21,14 @@ public class NodeTest {
             add(new WorldPoint(3, 0, 0));
         }};
 
-        final Node node0 = new Node(points.get(0), null);
-        final Node node1 = new Node(points.get(1), node0);
-        final Node node2 = new Node(points.get(2), node1);
-        final Node node3 = new Node(points.get(3), node2);
+        final Node node0 = Node.createInitialNode(points.get(0));
+        final Node node1 = new Node(new Walk(points.get(0), points.get(1)), node0);
+        final Node node2 = new Node(new Walk(points.get(1), points.get(2)), node1);
+        final Node node3 = new Node(new Walk(points.get(2), points.get(3)), node2);
 
         final Path path = node3.getPath();
-        assertEquals(path.getPoints().get(0), node0.getPosition());
-        assertEquals(path.getPoints().get(points.size() - 1), node3.getPosition());
-        assertEquals(path.getPoints().size(), points.size());
+        assertEquals(path.getMovements().get(0), node0.getMovement());
+        assertEquals(path.getMovements().get(points.size() - 1), node3.getMovement());
+        assertEquals(path.getMovements().size(), points.size());
     }
 }
