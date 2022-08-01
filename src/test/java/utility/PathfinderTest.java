@@ -1,5 +1,6 @@
 package utility;
 
+import jogamp.common.os.elf.Section;
 import net.runelite.api.coords.WorldPoint;
 import org.mockito.Mockito;
 import shortestpath.ClientInfoProvider;
@@ -10,6 +11,7 @@ import shortestpath.pathfinder.path.Transport;
 import shortestpath.worldmap.WorldMapProvider;
 import shortestpath.worldmap.sections.SectionPathfinder;
 import shortestpath.worldmap.sections.SectionMapper;
+import shortestpath.worldmap.sections.SectionRoute;
 
 import java.util.List;
 
@@ -38,15 +40,15 @@ public class PathfinderTest {
 
         final WorldPoint start = new WorldPoint(3232, 3401, 0);
         final WorldPoint target = new WorldPoint(3089, 3523, 0);
-        List<List<Transport>> route = sectionPlanner.getRoute(start, target);
+        List<SectionRoute> routes = sectionPlanner.getPossibleRoutes(start, target);
 
-        for (final List<Transport> routeIterator : route) {
+        for (final SectionRoute route : routes) {
             System.out.println("\nNew route:");
-            for (final Transport transport : routeIterator) {
+            for (final Transport transport : route.getTransports()) {
                 System.out.println(transport.getOrigin() + " to " + transport.getDestination());
             }
         }
-        System.out.println("Routes found: " + route.size());
+        System.out.println("Routes found: " + routes.size());
 
         // Pathfinder
         pathfinderTaskHandler = new PathfinderTaskHandler(configProvider, worldMapProvider, sectionMapper);

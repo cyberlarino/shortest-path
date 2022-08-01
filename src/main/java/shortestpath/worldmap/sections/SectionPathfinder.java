@@ -32,20 +32,20 @@ public class SectionPathfinder {
             this.transport = transport;
         }
 
-        public List<Transport> getRoute() {
-            final List<Transport> route = new LinkedList<>();
+        public List<Transport> getTransportRoute() {
+            final List<Transport> transports = new LinkedList<>();
 
             SectionNode sectionNodeIterator = this;
             while (sectionNodeIterator.previous != null) {
-                route.add(0, sectionNodeIterator.transport);
+                transports.add(0, sectionNodeIterator.transport);
                 sectionNodeIterator = sectionNodeIterator.previous;
             }
 
-            return route;
+            return transports;
         }
     }
 
-    public List<List<Transport>> getRoute(final WorldPoint start, final WorldPoint target) {
+    public List<SectionRoute> getPossibleRoutes(final WorldPoint start, final WorldPoint target) {
         Integer startSectionId = sectionMapper.getSectionId(start);
         Integer targetSectionId = sectionMapper.getSectionId(target);
         if (startSectionId == null || targetSectionId == null) {
@@ -58,7 +58,7 @@ public class SectionPathfinder {
         Set<Integer> visited = new HashSet<>();
         visited.add(startSectionId);
 
-        List<List<Transport>> routes = new ArrayList<>();
+        List<SectionRoute> routes = new ArrayList<>();
         while (!boundary.isEmpty()) {
             SectionNode node = boundary.remove(0);
 
@@ -75,15 +75,14 @@ public class SectionPathfinder {
                 if (transportOriginSectionId.equals(node.getSection())) {
                     if (transportDestinationSectionId.equals(targetSectionId)) {
                         final SectionNode reachedDestinationNode = new SectionNode(transportDestinationSectionId, node, transport);
-                        routes.add(reachedDestinationNode.getRoute());
+                        final SectionRoute route = new SectionRoute(start, target, reachedDestinationNode.getTransportRoute());
+                        routes.add(route);
                     }
                     else if (visited.add(transportDestinationSectionId)) {
                         boundary.add(new SectionNode(transportDestinationSectionId, node, transport));
                     }
                 }
             }
-
-
         }
 
         return routes;
