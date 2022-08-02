@@ -3,7 +3,8 @@ package shortestpath.worldmap.sections;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.pathfinder.path.Transport;
-import shortestpath.worldmap.WorldMapProvider;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.worldmap.WorldMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -11,45 +12,42 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-public class SectionPathfinder {
-    private final WorldMapProvider worldMapProvider;
+public class SectionPathfinderTask implements Runnable {
+    private final WorldMap worldMap;
     private final SectionMapper sectionMapper;
 
-    public SectionPathfinder(final WorldMapProvider worldMapProvider, final SectionMapper sectionMapper) {
-        this.worldMapProvider = worldMapProvider;
+    @Getter
+    private final WorldPoint start;
+    @Getter
+    private final WorldPoint target;
+    @Getter
+    private PathfinderTaskStatus status = PathfinderTaskStatus.CALCULATING;
+    @Getter
+    private final List<SectionRoute> routes = new ArrayList<>();
+
+    private boolean shouldCancelTask = false;
+
+    public SectionPathfinderTask(final WorldMap worldMap, final SectionMapper sectionMapper,
+                                 final WorldPoint start, final WorldPoint target) {
+        this.worldMap = worldMap;
         this.sectionMapper = sectionMapper;
+        this.start = start;
+        this.target = target;
+
+        new Thread(this).start();
     }
 
-    private static class SectionNode {
-        @Getter
-        final int section;
-        final SectionNode previous;
-        final Transport transport;
-
-        public SectionNode(final int section, final SectionNode previous, final Transport transport) {
-            this.section = section;
-            this.previous = previous;
-            this.transport = transport;
-        }
-
-        public List<Transport> getTransportRoute() {
-            final List<Transport> transports = new LinkedList<>();
-
-            SectionNode sectionNodeIterator = this;
-            while (sectionNodeIterator.previous != null) {
-                transports.add(0, sectionNodeIterator.transport);
-                sectionNodeIterator = sectionNodeIterator.previous;
-            }
-
-            return transports;
-        }
+    public void cancelTask() {
+        shouldCancelTask = true;
     }
 
-    public List<SectionRoute> getPossibleRoutes(final WorldPoint start, final WorldPoint target) {
+    @Override
+    public void run() {
         Integer startSectionId = sectionMapper.getSectionId(start);
         Integer targetSectionId = sectionMapper.getSectionId(target);
         if (startSectionId == null || targetSectionId == null) {
-            return null;
+            status = PathfinderTaskStatus.CANCELLED;
+            return;
         }
 
         List<SectionNode> boundary = new LinkedList<>();
@@ -58,11 +56,10 @@ public class SectionPathfinder {
         Set<Integer> visited = new HashSet<>();
         visited.add(startSectionId);
 
-        List<SectionRoute> routes = new ArrayList<>();
-        while (!boundary.isEmpty()) {
+        while (!boundary.isEmpty() && !shouldCancelTask) {
             SectionNode node = boundary.remove(0);
 
-            for (final Transport transport : worldMapProvider.getWorldMap().getTransports()) {
+            for (final Transport transport : worldMap.getTransports()) {
                 final Integer transportOriginSectionId = sectionMapper.getSectionId(transport.getOrigin());
                 final Integer transportDestinationSectionId = sectionMapper.getSectionId(transport.getDestination());
                 assert transportOriginSectionId != null;
@@ -85,6 +82,11 @@ public class SectionPathfinder {
             }
         }
 
-        return routes;
+        if (shouldCancelTask) {
+            status = PathfinderTaskStatus.CANCELLED;
+        }
+        else {
+            status = PathfinderTaskStatus.DONE;
+        }
     }
 }

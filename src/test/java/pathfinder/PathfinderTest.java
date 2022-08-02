@@ -8,7 +8,8 @@ import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.pathfinder.Node;
 import shortestpath.pathfinder.PathfinderConfig;
-import shortestpath.pathfinder.PathfinderTask;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.pathfinder.pathfindertask.SimplePathfinderTask;
 import shortestpath.pathfinder.path.Walk;
 import shortestpath.worldmap.WorldMapProvider;
 
@@ -35,9 +36,9 @@ public class PathfinderTest {
         this.varrockSteppingStoneShortcutPoints.add(new WorldPoint(3153, 3363, 0));
     }
 
-    private static boolean waitForPathfinderTaskCompletion(final PathfinderTask task) {
+    private static boolean waitForPathfinderTaskCompletion(final SimplePathfinderTask task) {
         long startTime = System.nanoTime();
-        while (!task.isDone()) {
+        while (task.getStatus() == PathfinderTaskStatus.CALCULATING) {
             if ((System.nanoTime() - startTime) >= TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS)) {
                 return false;
             }
@@ -112,7 +113,7 @@ public class PathfinderTest {
 
         final WorldPoint start = new WorldPoint(3171, 3383, 0);
         final WorldPoint target = new WorldPoint(3171, 3404, 0);
-        final PathfinderTask task = new PathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
+        final SimplePathfinderTask task = new SimplePathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
 
         final boolean calculatedPathInTime = waitForPathfinderTaskCompletion(task);
         Assert.assertTrue(calculatedPathInTime);
@@ -131,7 +132,7 @@ public class PathfinderTest {
 
         final WorldPoint start = new WorldPoint(3147, 3338, 0);
         final WorldPoint target = new WorldPoint(3175, 3323, 0);
-        final PathfinderTask task = new PathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
+        final SimplePathfinderTask task = new SimplePathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
 
         final boolean calculatedPathInTime = waitForPathfinderTaskCompletion(task);
         final boolean isPathValid = isPathValid(task.getPath());
@@ -170,7 +171,7 @@ public class PathfinderTest {
 
         final WorldPoint start = new WorldPoint(3161, 3364, 0);
         final WorldPoint target = new WorldPoint(3143, 3364, 0);
-        final PathfinderTask task = new PathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
+        final SimplePathfinderTask task = new SimplePathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
 
         final boolean calculatedPathInTime = waitForPathfinderTaskCompletion(task);
         Assert.assertTrue(calculatedPathInTime);
@@ -194,7 +195,7 @@ public class PathfinderTest {
 
         final WorldPoint start = new WorldPoint(3161, 3364, 0);
         final WorldPoint target = new WorldPoint(3143, 3364, 0);
-        final PathfinderTask task = new PathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
+        final SimplePathfinderTask task = new SimplePathfinderTask(worldMapProvider.getWorldMap(), config, start, target);
 
         final boolean calculatedPathInTime = waitForPathfinderTaskCompletion(task);
         Assert.assertTrue(calculatedPathInTime);

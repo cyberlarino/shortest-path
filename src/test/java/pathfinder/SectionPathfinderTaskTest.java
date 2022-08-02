@@ -5,29 +5,46 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import shortestpath.pathfinder.path.Transport;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
 import shortestpath.worldmap.WorldMapProvider;
 import shortestpath.worldmap.sections.SectionMapper;
-import shortestpath.worldmap.sections.SectionPathfinder;
+import shortestpath.worldmap.sections.SectionPathfinderTask;
 import shortestpath.worldmap.sections.SectionRoute;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class SectionPathfinderTest {
+public class SectionPathfinderTaskTest {
+    private static final long TIMEOUT_SECONDS = 100;
+
     private WorldMapProvider worldMapProvider;
     private SectionMapper sectionMapper;
-    private SectionPathfinder sectionPathfinder;
 
     @Before
     public void setup() {
         this.worldMapProvider = new WorldMapProvider();
         this.sectionMapper = new SectionMapper(worldMapProvider);
         sectionMapper.findSections();
-        this.sectionPathfinder = new SectionPathfinder(worldMapProvider, sectionMapper);
     }
 
     // Utility functions
+    private static boolean waitForPathfinderTaskCompletion(final SectionPathfinderTask task) {
+        long startTime = System.nanoTime();
+        while (task.getStatus() == PathfinderTaskStatus.CALCULATING) {
+            if ((System.nanoTime() - startTime) >= TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS)) {
+                return false;
+            }
+
+            try {
+                TimeUnit.MILLISECONDS.sleep(10);
+            } catch (Exception ignore) {
+            }
+        }
+        return true;
+    }
+
     private boolean allRoutesValid(final List<SectionRoute> routes, final WorldPoint start, final WorldPoint target) {
         final Integer startSection = sectionMapper.getSectionId(start);
         final Integer targetSection = sectionMapper.getSectionId(target);
@@ -79,7 +96,12 @@ public class SectionPathfinderTest {
         final WorldPoint start = new WorldPoint(3232, 3401, 0);
         final WorldPoint target = new WorldPoint(3089, 3523, 0);
 
-        final List<SectionRoute> routes = sectionPathfinder.getPossibleRoutes(start, target);
+        SectionPathfinderTask sectionPathfinderTask = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target);
+        final boolean taskCompletedInTime = waitForPathfinderTaskCompletion(sectionPathfinderTask);
+        Assert.assertTrue(taskCompletedInTime);
+
+        final List<SectionRoute> routes = sectionPathfinderTask.getRoutes();
         Assert.assertTrue(allRoutesValid(routes, start, target));
+        Assert.assertTrue(routes.size() > 0);
     }
 }

@@ -12,8 +12,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 import shortestpath.ClientInfoProvider;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.PathfinderRequestHandler;
-import shortestpath.pathfinder.PathfinderTask;
-import shortestpath.pathfinder.PathfinderTaskHandler;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.pathfinder.pathfindertask.SimplePathfinderTask;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
 import shortestpath.pathfinder.path.Walk;
 import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
@@ -35,7 +36,7 @@ public class PathfinderRequestHandlerTest {
     @Mock
     private PathfinderTaskHandler pathfinderTaskHandlerMock;
     @Mock
-    private PathfinderTask pathfinderTaskMock;
+    private SimplePathfinderTask simplePathfinderTaskMock;
 
     @Captor
     private ArgumentCaptor<WorldPoint> worldPointArgumentCaptor;
@@ -80,8 +81,8 @@ public class PathfinderRequestHandlerTest {
         final Path path = createFakePath(start, target);
 
         when(clientInfoProviderMock.getPlayerLocation()).thenReturn(start);
-        when(pathfinderTaskHandlerMock.newTask(start, target)).thenReturn(pathfinderTaskMock);
-        when(pathfinderTaskMock.getPath()).thenReturn(path);
+        when(pathfinderTaskHandlerMock.newTask(start, target)).thenReturn(simplePathfinderTaskMock);
+        when(simplePathfinderTaskMock.getPath()).thenReturn(path);
         return path;
     }
 
@@ -104,19 +105,18 @@ public class PathfinderRequestHandlerTest {
 
         // With path task in place, getActivePath() and isActivePathDone() should return proper values
         final Path activePath = pathfinderRequestHandler.getActivePath();
-        verify(pathfinderTaskMock).getPath();
+        verify(simplePathfinderTaskMock).getPath();
         Assert.assertEquals(expectedPath, activePath);
 
         //   Task not yet done
-        when(pathfinderTaskMock.isDone()).thenReturn(false);
+        when(simplePathfinderTaskMock.getStatus()).thenReturn(PathfinderTaskStatus.CALCULATING);
         boolean isPathTaskDone = pathfinderRequestHandler.isActivePathDone();
         Assert.assertFalse(isPathTaskDone);
 
         //   Task done
-        when(pathfinderTaskMock.isDone()).thenReturn(true);
+        when(simplePathfinderTaskMock.getStatus()).thenReturn(PathfinderTaskStatus.DONE);
         isPathTaskDone = pathfinderRequestHandler.isActivePathDone();
         Assert.assertTrue(isPathTaskDone);
-        verify(pathfinderTaskMock, times(2)).isDone(); // two because happened twice
     }
 
     @Test
@@ -180,17 +180,17 @@ public class PathfinderRequestHandlerTest {
         final WorldPoint startPoint = new WorldPoint(3161, 3364, 0);
         final Path startToTargetPath = createFakePath(startPoint, target);
 
-        final PathfinderTask pathfinderTaskMock1 = mock(PathfinderTask.class);
-        when(pathfinderTaskHandlerMock.newTask(startPoint, target)).thenReturn(pathfinderTaskMock1);
-        when(pathfinderTaskMock1.getPath()).thenReturn(startToTargetPath);
+        final SimplePathfinderTask simplePathfinderTaskMock1 = mock(SimplePathfinderTask.class);
+        when(pathfinderTaskHandlerMock.newTask(startPoint, target)).thenReturn(simplePathfinderTaskMock1);
+        when(simplePathfinderTaskMock1.getPath()).thenReturn(startToTargetPath);
 
 
         // When setting new target, the path outputted should be the startToTargetPath, as player position is
         // not involved.
         pathfinderRequestHandler.setStart(startPoint);
-        Assert.assertEquals(pathfinderTaskMock1.getPath(), startToTargetPath);
+        Assert.assertEquals(simplePathfinderTaskMock1.getPath(), startToTargetPath);
         verify(clientInfoProviderMock, never()).getPlayerLocation();
-        verify(pathfinderTaskMock1).getPath();
+        verify(simplePathfinderTaskMock1).getPath();
     }
 
     @Test
@@ -213,9 +213,9 @@ public class PathfinderRequestHandlerTest {
         final WorldPoint newTarget = new WorldPoint(3143, 3364, 0);
         final Path startToNewTargetPath = createFakePath(startPoint, newTarget);
 
-        final PathfinderTask pathfinderTaskMock2 = mock(PathfinderTask.class);
-        when(pathfinderTaskHandlerMock.newTask(startPoint, newTarget)).thenReturn(pathfinderTaskMock2);
-        when(pathfinderTaskMock2.getPath()).thenReturn(startToNewTargetPath);
+        final SimplePathfinderTask simplePathfinderTaskMock2 = mock(SimplePathfinderTask.class);
+        when(pathfinderTaskHandlerMock.newTask(startPoint, newTarget)).thenReturn(simplePathfinderTaskMock2);
+        when(simplePathfinderTaskMock2.getPath()).thenReturn(startToNewTargetPath);
 
         pathfinderRequestHandler.setTarget(newTarget);
         Assert.assertEquals(startToNewTargetPath, pathfinderRequestHandler.getActivePath());

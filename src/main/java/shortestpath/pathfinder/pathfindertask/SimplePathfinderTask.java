@@ -1,4 +1,4 @@
-package shortestpath.pathfinder;
+package shortestpath.pathfinder.pathfindertask;
 
 import java.util.function.Predicate;
 
@@ -6,13 +6,15 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
+import shortestpath.pathfinder.Node;
+import shortestpath.pathfinder.NodeGraph;
+import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.path.Transport;
-import shortestpath.pathfinder.path.Walk;
 import shortestpath.worldmap.WorldMap;
 
 @Slf4j
-public class PathfinderTask implements Runnable {
+public class SimplePathfinderTask implements PathfinderTask {
     private static final WorldArea WILDERNESS_ABOVE_GROUND = new WorldArea(2944, 3523, 448, 448, 0);
     private static final WorldArea WILDERNESS_UNDERGROUND = new WorldArea(2944, 9918, 320, 442, 0);
 
@@ -27,16 +29,15 @@ public class PathfinderTask implements Runnable {
     @Getter
     private Path path;
     @Getter
-    private boolean isDone = false;
-    @Getter
+    private PathfinderTaskStatus status = PathfinderTaskStatus.CALCULATING;
     private final long visitedNodes = 0;
 
     private final WorldMap worldMap;
     private final Predicate<WorldPoint> neighborPredicate;
     private final Predicate<Transport> transportPredicate;
-    private boolean shouldAbortTask = false;
+    private boolean shouldCancelTask = false;
 
-    public PathfinderTask(final WorldMap worldMap, final PathfinderConfig config, final WorldPoint start, final WorldPoint target) {
+    public SimplePathfinderTask(final WorldMap worldMap, final PathfinderConfig config, final WorldPoint start, final WorldPoint target) {
         this.worldMap = worldMap;
         this.start = start;
         this.target = target;
@@ -53,8 +54,8 @@ public class PathfinderTask implements Runnable {
         new Thread(this).start();
     }
 
-    public void abortTask() {
-        shouldAbortTask = true;
+    public void cancelTask() {
+        shouldCancelTask = true;
     }
 
     @Override
@@ -63,7 +64,7 @@ public class PathfinderTask implements Runnable {
         graph.addBoundaryNode(Node.createInitialNode(start));
 
         int bestDistance = Integer.MAX_VALUE;
-        while (!graph.getBoundary().isEmpty() && !shouldAbortTask) {
+        while (!graph.getBoundary().isEmpty() && !shouldCancelTask) {
             final int indexToEvaluate = 0;
             final Node node = graph.getBoundary().get(indexToEvaluate);
 
@@ -81,10 +82,15 @@ public class PathfinderTask implements Runnable {
             graph.evaluateBoundaryNode(indexToEvaluate, this.neighborPredicate, this.transportPredicate);
         }
 
-        final String taskStatusInfo = (shouldAbortTask ? "aborted" : "finished calculating");
+        final String taskStatusInfo = (shouldCancelTask ? "cancelled" : "finished calculating");
         log.debug("PathfinderTask done (" + taskStatusInfo + "); " + graph.getVisited().size() + " visited nodes, "
                 + graph.getBoundary().size() + " boundary nodes");
 
-        this.isDone = true;
+        if (shouldCancelTask) {
+            status = PathfinderTaskStatus.CANCELLED;
+        }
+        else {
+            status = PathfinderTaskStatus.DONE;
+        }
     }
 }

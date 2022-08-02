@@ -1,19 +1,20 @@
 package utility;
 
-import jogamp.common.os.elf.Section;
 import net.runelite.api.coords.WorldPoint;
 import org.mockito.Mockito;
 import shortestpath.ClientInfoProvider;
 import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.PathfinderRequestHandler;
-import shortestpath.pathfinder.PathfinderTaskHandler;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
 import shortestpath.pathfinder.path.Transport;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
 import shortestpath.worldmap.WorldMapProvider;
-import shortestpath.worldmap.sections.SectionPathfinder;
+import shortestpath.worldmap.sections.SectionPathfinderTask;
 import shortestpath.worldmap.sections.SectionMapper;
 import shortestpath.worldmap.sections.SectionRoute;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class PathfinderTest {
     private static ClientInfoProvider clientInfoProvider;
@@ -21,7 +22,7 @@ public class PathfinderTest {
     private static WorldMapProvider worldMapProvider;
 
     private static SectionMapper sectionMapper;
-    private static SectionPathfinder sectionPlanner;
+    private static SectionPathfinderTask sectionPlanner;
 
     private static PathfinderTaskHandler pathfinderTaskHandler;
     private static PathfinderRequestHandler pathfinderRequestHandler;
@@ -33,25 +34,39 @@ public class PathfinderTest {
         worldMapProvider = new WorldMapProvider();
 
         sectionMapper = new SectionMapper(worldMapProvider);
-        sectionPlanner = new SectionPathfinder(worldMapProvider, sectionMapper);
         sectionMapper.findSections();
 
         System.out.println("Done mapping sections.\n");
 
         final WorldPoint start = new WorldPoint(3232, 3401, 0);
         final WorldPoint target = new WorldPoint(3089, 3523, 0);
-        List<SectionRoute> routes = sectionPlanner.getPossibleRoutes(start, target);
+
+        sectionPlanner = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target);
+        waitForPathfinderTaskCompletion(sectionPlanner);
+        List<SectionRoute> routes = sectionPlanner.getRoutes();
 
         for (final SectionRoute route : routes) {
             System.out.println("\nNew route:");
             for (final Transport transport : route.getTransports()) {
                 System.out.println(transport.getOrigin() + " to " + transport.getDestination());
             }
+            System.out.println("Route length: " + route.length() + " points.");
         }
         System.out.println("Routes found: " + routes.size());
 
         // Pathfinder
         pathfinderTaskHandler = new PathfinderTaskHandler(configProvider, worldMapProvider, sectionMapper);
         pathfinderRequestHandler = new PathfinderRequestHandler(clientInfoProvider, worldMapProvider, pathfinderTaskHandler);
+    }
+
+    private static boolean waitForPathfinderTaskCompletion(final SectionPathfinderTask task) {
+        long startTime = System.nanoTime();
+        while (task.getStatus() == PathfinderTaskStatus.CALCULATING) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(10);
+            } catch (Exception ignore) {
+            }
+        }
+        return true;
     }
 }

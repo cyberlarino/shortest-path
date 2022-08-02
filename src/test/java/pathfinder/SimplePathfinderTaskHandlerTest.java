@@ -9,8 +9,9 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.path.Path;
-import shortestpath.pathfinder.PathfinderTask;
-import shortestpath.pathfinder.PathfinderTaskHandler;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.pathfinder.pathfindertask.SimplePathfinderTask;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
 import shortestpath.pathfinder.path.Walk;
 import shortestpath.worldmap.WorldMapProvider;
 import shortestpath.worldmap.sections.SectionMapper;
@@ -23,9 +24,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class PathfinderTaskHandlerTest {
+public class SimplePathfinderTaskHandlerTest {
     @Mock
-    private PathfinderTask pathfinderTaskMock;
+    private SimplePathfinderTask simplePathfinderTaskMock;
     @Mock
     private ConfigProvider configProviderMock;
     @Mock
@@ -55,30 +56,29 @@ public class PathfinderTaskHandlerTest {
         // When path calculation has no progress after threshold amount of ticks, cancel task
         final WorldPoint start = new WorldPoint(0, 0, 0);
         final WorldPoint target = new WorldPoint(10, 0, 0);
-        when(pathfinderTaskMock.getTarget()).thenReturn(target);
-        when(pathfinderTaskMock.isDone()).thenReturn(false);
+        when(simplePathfinderTaskMock.getTarget()).thenReturn(target);
+        when(simplePathfinderTaskMock.getStatus()).thenReturn(PathfinderTaskStatus.CALCULATING);
 
         final Path noProgressPath = createFakePath(start, start);
 
         // Add task to list of tasks to manage
-        pathfinderTaskHandler.add(pathfinderTaskMock);
+        pathfinderTaskHandler.add(simplePathfinderTaskMock);
         Assert.assertEquals(1, pathfinderTaskHandler.numberOfTasks());
 
         // No progress on the path, but threshold not reached yet, shouldn't cancel
-        when(pathfinderTaskMock.getPath()).thenReturn(noProgressPath);
+        when(simplePathfinderTaskMock.getPath()).thenReturn(noProgressPath);
         for (int i = 0; i < TICKS_WITHOUT_PROGRESS_BEFORE_CANCEL - 1; ++i) {
             pathfinderTaskHandler.evaluateTasks();
         }
-        verify(pathfinderTaskMock, never()).abortTask();
+        verify(simplePathfinderTaskMock, never()).cancelTask();
 
         // Set-up for next step
-        reset(pathfinderTaskMock);
-        when(pathfinderTaskMock.getPath()).thenReturn(noProgressPath);
-        when(pathfinderTaskMock.getTarget()).thenReturn(target);
+        reset(simplePathfinderTaskMock);
+        when(simplePathfinderTaskMock.getPath()).thenReturn(noProgressPath);
 
         // Threshold reached, this time cancel task
         pathfinderTaskHandler.evaluateTasks();
-        verify(pathfinderTaskMock).abortTask();
+        verify(simplePathfinderTaskMock).cancelTask();
         Assert.assertEquals(0, pathfinderTaskHandler.numberOfTasks());
     }
 
@@ -88,26 +88,25 @@ public class PathfinderTaskHandlerTest {
         final WorldPoint start = new WorldPoint(0, 0, 0);
         final WorldPoint someProgressPoint = new WorldPoint(5, 0, 0);
         final WorldPoint target = new WorldPoint(10, 0, 0);
-        when(pathfinderTaskMock.getTarget()).thenReturn(target);
 
         final Path noProgressPath = createFakePath(start, start);
         final Path someProgressPath = createFakePath(start, someProgressPoint);
 
         // Add task to list of tasks to manage
-        pathfinderTaskHandler.add(pathfinderTaskMock);
+        pathfinderTaskHandler.add(simplePathfinderTaskMock);
         Assert.assertEquals(1, pathfinderTaskHandler.numberOfTasks());
 
         // No progress on the path, but threshold not reached yet, shouldn't cancel
-        when(pathfinderTaskMock.getPath()).thenReturn(noProgressPath);
+        when(simplePathfinderTaskMock.getPath()).thenReturn(noProgressPath);
         for (int i = 0; i < TICKS_WITHOUT_PROGRESS_BEFORE_CANCEL - 1; ++i) {
             pathfinderTaskHandler.evaluateTasks();
         }
 
         // Some progress on the path, counter should be reset, do not abort task
-        when(pathfinderTaskMock.getPath()).thenReturn(someProgressPath);
+        when(simplePathfinderTaskMock.getPath()).thenReturn(someProgressPath);
         pathfinderTaskHandler.evaluateTasks();
 
-        verify(pathfinderTaskMock, never()).abortTask();
+        verify(simplePathfinderTaskMock, never()).cancelTask();
         Assert.assertEquals(1, pathfinderTaskHandler.numberOfTasks());
     }
 }

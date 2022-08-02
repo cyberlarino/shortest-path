@@ -4,6 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ClientInfoProvider;
 import shortestpath.pathfinder.path.Path;
+import shortestpath.pathfinder.pathfindertask.PathfinderTask;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
 import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMap;
 import shortestpath.worldmap.WorldMapProvider;
@@ -70,7 +73,12 @@ public class PathfinderRequestHandler {
     }
 
     public boolean isActivePathDone() {
-        return (activeTask == null ? true : activeTask.isDone());
+        if (activeTask == null) {
+            return true;
+        }
+
+        return activeTask.getStatus() == PathfinderTaskStatus.DONE
+                || activeTask.getStatus() == PathfinderTaskStatus.CANCELLED;
     }
 
     private void updatePath() {
