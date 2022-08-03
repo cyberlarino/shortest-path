@@ -35,7 +35,6 @@ public class PathfinderTest {
 
         sectionMapper = new SectionMapper(worldMapProvider);
         sectionMapper.findSections();
-
         System.out.println("Done mapping sections.\n");
 
         final WorldPoint start = new WorldPoint(3232, 3401, 0);

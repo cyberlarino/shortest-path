@@ -20,8 +20,6 @@ public class SimplePathfinderTaskCollection {
         this.route = route;
 
         if (route.getTransports().isEmpty()) {
-        }
-        else if (route.getTransports().size() == 1) {
             sectionTasks.add(new SimplePathfinderTask(worldMap, pathfinderConfig, route.getOrigin(), route.getDestination()));
         }
         else {

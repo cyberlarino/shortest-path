@@ -77,8 +77,7 @@ public class PathfinderRequestHandler {
             return true;
         }
 
-        return activeTask.getStatus() == PathfinderTaskStatus.DONE
-                || activeTask.getStatus() == PathfinderTaskStatus.CANCELLED;
+        return activeTask.getStatus() != PathfinderTaskStatus.CALCULATING;
     }
 
     private void updatePath() {

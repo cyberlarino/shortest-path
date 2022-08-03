@@ -25,8 +25,7 @@ public class SectionPathfinderTaskTest {
     @Before
     public void setup() {
         this.worldMapProvider = new WorldMapProvider();
-        this.sectionMapper = new SectionMapper(worldMapProvider);
-        sectionMapper.findSections();
+        this.sectionMapper = SectionMapper.fromFile(worldMapProvider);
     }
 
     // Utility functions

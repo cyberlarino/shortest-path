@@ -56,6 +56,7 @@ public class SimplePathfinderTaskHandlerTest {
         // When path calculation has no progress after threshold amount of ticks, cancel task
         final WorldPoint start = new WorldPoint(0, 0, 0);
         final WorldPoint target = new WorldPoint(10, 0, 0);
+        when(simplePathfinderTaskMock.getStart()).thenReturn(start);
         when(simplePathfinderTaskMock.getTarget()).thenReturn(target);
         when(simplePathfinderTaskMock.getStatus()).thenReturn(PathfinderTaskStatus.CALCULATING);
 
@@ -74,6 +75,8 @@ public class SimplePathfinderTaskHandlerTest {
 
         // Set-up for next step
         reset(simplePathfinderTaskMock);
+        when(simplePathfinderTaskMock.getStart()).thenReturn(start);
+        when(simplePathfinderTaskMock.getTarget()).thenReturn(target);
         when(simplePathfinderTaskMock.getPath()).thenReturn(noProgressPath);
 
         // Threshold reached, this time cancel task

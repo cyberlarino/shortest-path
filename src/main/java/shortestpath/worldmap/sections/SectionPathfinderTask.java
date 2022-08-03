@@ -60,8 +60,9 @@ public class SectionPathfinderTask implements Runnable {
             SectionNode node = boundary.remove(0);
 
             for (final Transport transport : worldMap.getTransports()) {
-                final Integer transportOriginSectionId = sectionMapper.getSectionId(transport.getOrigin());
-                final Integer transportDestinationSectionId = sectionMapper.getSectionId(transport.getDestination());
+                final MovementSections movementSections = sectionMapper.getSectionId(transport);
+                final Integer transportOriginSectionId = movementSections.getOriginSection();
+                final Integer transportDestinationSectionId = movementSections.getDestinationSection();
                 assert transportOriginSectionId != null;
                 assert transportDestinationSectionId != null;
 

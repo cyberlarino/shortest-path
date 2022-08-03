@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.path.Path;
+import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 import shortestpath.worldmap.sections.SectionMapper;
 
@@ -57,6 +58,10 @@ public class PathfinderTaskHandler {
         // Cannot remove entries while iterating through the list, so collect paths to remove
         // them here instead.
         for (final PathfinderTaskInfo task : tasksToRemove) {
+            final WorldPoint taskStart = task.getTask().getStart();
+            final WorldPoint taskTarget = task.getTask().getTarget();
+            log.debug("Task from " + Util.worldPointToString(taskStart) + " to " + Util.worldPointToString(taskTarget)
+                    + " has made no progress in " + task.getTicksSinceBetterPath() + " ticks. Cancelling task.");
             pathfinderTasks.remove(task);
         }
     }

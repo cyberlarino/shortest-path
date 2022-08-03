@@ -102,8 +102,7 @@ public class ShortestPathPlugin extends Plugin {
         this.configProvider = new ConfigProvider(config, clientInfoProvider);
         this.worldMapProvider = new WorldMapProvider();
 
-        this.sectionMapper = new SectionMapper(worldMapProvider);
-        sectionMapper.findSections();
+        this.sectionMapper = SectionMapper.fromFile(worldMapProvider);
 
         // Pathfinder
         this.pathfinderTaskHandler = new PathfinderTaskHandler(configProvider, worldMapProvider, sectionMapper);

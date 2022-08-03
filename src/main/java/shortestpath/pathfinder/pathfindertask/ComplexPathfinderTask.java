@@ -1,7 +1,6 @@
 package shortestpath.pathfinder.pathfindertask;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.path.Movement;
@@ -13,8 +12,10 @@ import shortestpath.worldmap.sections.SectionPathfinderTask;
 import shortestpath.worldmap.sections.SectionRoute;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 public class ComplexPathfinderTask implements PathfinderTask {
     @Getter
@@ -52,18 +53,20 @@ public class ComplexPathfinderTask implements PathfinderTask {
             return PathfinderTaskStatus.CANCELLED;
         }
 
-        if (simplePathfinderTaskCollection == null) {
+        if (simplePathfinderTaskCollection == null || updatingTasks) {
             return PathfinderTaskStatus.CALCULATING;
         }
 
-        if (!updatingTasks
-                && (simplePathfinderTaskCollection.getSectionTasks().stream().anyMatch(task -> task.getStatus() == PathfinderTaskStatus.CANCELLED)
-                || sectionPathfinderTask.getStatus() == PathfinderTaskStatus.CANCELLED)) {
+        if (simplePathfinderTaskCollection.getSectionTasks().stream().anyMatch(task -> task.getStatus() == PathfinderTaskStatus.CANCELLED)
+                || sectionPathfinderTask.getStatus() == PathfinderTaskStatus.CANCELLED) {
             cancelTask();
             return PathfinderTaskStatus.CANCELLED;
         }
 
         if (simplePathfinderTaskCollection.allTasksDone()) {
+            if (sectionPathfinderTask.getStatus() == PathfinderTaskStatus.CALCULATING) {
+                return PathfinderTaskStatus.LOOKING_FOR_BETTER_PATH;
+            }
             return PathfinderTaskStatus.DONE;
         }
 
@@ -105,8 +108,15 @@ public class ComplexPathfinderTask implements PathfinderTask {
     }
 
     public void run() {
-        while (((status = getStatus()) != PathfinderTaskStatus.CANCELLED || sectionPathfinderTask.getStatus() == PathfinderTaskStatus.CALCULATING)
-                && !shouldCancelTask) {
+        final BooleanSupplier isStillCalculating = () -> {
+            status = getStatus();
+            if (shouldCancelTask) {
+                return false;
+            }
+            return status == PathfinderTaskStatus.CALCULATING || status == PathfinderTaskStatus.LOOKING_FOR_BETTER_PATH;
+        };
+
+        while (isStillCalculating.getAsBoolean()) {
             SectionRoute newRoute = null;
             final int indexToEvaluateTo = sectionPathfinderTask.getRoutes().size();
             for (int i = sectionRouteEvaluatedIndex; i < sectionPathfinderTask.getRoutes().size(); ++i) {
