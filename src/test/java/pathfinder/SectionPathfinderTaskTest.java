@@ -91,9 +91,23 @@ public class SectionPathfinderTaskTest {
     }
 
     @Test
-    public void simpleSectionTraverseTest() {
+    public void simpleSectionTraverseTest_GrandExchange() {
         final WorldPoint start = new WorldPoint(3232, 3401, 0);
         final WorldPoint target = new WorldPoint(3089, 3523, 0);
+
+        SectionPathfinderTask sectionPathfinderTask = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target);
+        final boolean taskCompletedInTime = waitForPathfinderTaskCompletion(sectionPathfinderTask);
+        Assert.assertTrue(taskCompletedInTime);
+
+        final List<SectionRoute> routes = sectionPathfinderTask.getRoutes();
+        Assert.assertTrue(allRoutesValid(routes, start, target));
+        Assert.assertTrue(routes.size() > 0);
+    }
+
+    @Test
+    public void simpleSectionTraverseTest_LumbridgeCastle() {
+        final WorldPoint start = new WorldPoint(3212, 3218, 2);
+        final WorldPoint target = new WorldPoint(3224, 3218, 0);
 
         SectionPathfinderTask sectionPathfinderTask = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target);
         final boolean taskCompletedInTime = waitForPathfinderTaskCompletion(sectionPathfinderTask);

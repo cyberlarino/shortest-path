@@ -49,8 +49,6 @@ public class ComplexPathfinderTask implements PathfinderTask {
         this.target = target;
 
         this.sectionPathfinderTask = new SectionPathfinderTask(worldMap, sectionMapper, start, target);
-        // Start complex task off with a simple task, which should be replaced by better path if one found
-//        this.pathTask = new SimplePathfinderTaskCollection(new SectionRoute(start, target, new ArrayList<>()), worldMap, pathfinderConfig);
         new Thread(this).start();
     }
     @Nullable
@@ -69,13 +67,13 @@ public class ComplexPathfinderTask implements PathfinderTask {
     public void run() {
         waitForSectionPathfinderTaskCompletion();
 
-        List<SectionRoute> routes = sectionPathfinderTask.getRoutes();
+        List<SectionRoute> routes = new ArrayList<>(sectionPathfinderTask.getRoutes());
         final int totalRoutes = routes.size();
         routes.sort(Comparator.comparingInt(SectionRoute::length));
         List<PathfinderRouteTask> tasks = new ArrayList<>();
 
         final BooleanSupplier isStillCalculating = () -> {
-            if (!routes.isEmpty()) {
+            if (!routes.isEmpty() || !tasks.isEmpty()) {
                 return true;
             }
             if (activeTask != null && activeTask.getStatus() == PathfinderTaskStatus.CALCULATING) {
@@ -86,7 +84,7 @@ public class ComplexPathfinderTask implements PathfinderTask {
 
         int routesExplored = 0;
         final int MAX_CONCURRENT_TASKS = 5;
-        do {
+        while (isStillCalculating.getAsBoolean() && !shouldCancelTask) {
             final List<SectionRoute> routesToRemove = new LinkedList<>();
             final List<PathfinderRouteTask> tasksToRemove = new LinkedList<>();
 
@@ -133,7 +131,7 @@ public class ComplexPathfinderTask implements PathfinderTask {
             if (shouldCancelTask) {
                 tasks.forEach(PathfinderRouteTask::cancelTask);
             }
-        } while (isStillCalculating.getAsBoolean() && !shouldCancelTask);
+        }
 
         if (shouldCancelTask) {
             status = PathfinderTaskStatus.CANCELLED;
@@ -143,7 +141,8 @@ public class ComplexPathfinderTask implements PathfinderTask {
         }
 
         final String taskStatusInfo = (shouldCancelTask ? "cancelled" : "finished calculating");
-        log.debug("PathfinderTask done (" + taskStatusInfo + "). Routes total: " + totalRoutes + ", routes explored: " + routesExplored);
+        log.debug("PathfinderTask done (" + taskStatusInfo + "). Routes total: " + totalRoutes + ", routes explored: "
+                + routesExplored + ". Path length: " + activeTask.getPath().getMovements().size());
     }
 
     private void waitForSectionPathfinderTaskCompletion() {
@@ -172,11 +171,10 @@ public class ComplexPathfinderTask implements PathfinderTask {
             else if (activeTaskStatus != PathfinderTaskStatus.DONE && taskStatus == PathfinderTaskStatus.DONE) {
                 shouldTaskReplaceActiveTask = true;
             }
-            else if (activeTaskStatus == PathfinderTaskStatus.DONE && task.getStatus() == PathfinderTaskStatus.DONE
-                    && Objects.requireNonNull(task.getPath()).getMovements().size() < task.getPath().getMovements().size()) {
+            else if (activeTaskStatus == PathfinderTaskStatus.DONE && taskStatus == PathfinderTaskStatus.DONE
+                    && task.getPath().getMovements().size() < activeTask.getPath().getMovements().size()) {
                 shouldTaskReplaceActiveTask = true;
             }
-
         }
 
         if (shouldTaskReplaceActiveTask) {

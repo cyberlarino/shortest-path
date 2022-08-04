@@ -10,6 +10,7 @@ import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.pathfinder.pathfindertask.ComplexPathfinderTask;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 import shortestpath.worldmap.sections.SectionMapper;
 
@@ -87,7 +88,7 @@ public class ComplexPathfinderTaskTest {
     }
 
     @Test
-    public void pathTest_differentSection() {
+    public void pathTest_GrandExchange() {
         final WorldPoint start = new WorldPoint(2979, 3819, 0);
         final WorldPoint target = new WorldPoint(2854, 3969, 0);
 
@@ -95,6 +96,29 @@ public class ComplexPathfinderTaskTest {
         final boolean finishedInTime = waitForPathfinderTaskCompletion(task);
         Assert.assertTrue(finishedInTime);
 
-        Assert.assertTrue(isPathValid(task.getPath()));
+        final Path path = task.getPath();
+        Assert.assertNotNull(path);
+        Assert.assertTrue(isPathValid(path));
+    }
+
+    @Test
+    public void pathTest_Canifis() {
+        final WorldPoint start = new WorldPoint(3395, 3485, 0);
+        final WorldPoint target = new WorldPoint(3478, 9839, 0);
+        defaultConfig.agilityLevel = 65;
+
+        ComplexPathfinderTask task = new ComplexPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, defaultConfig, start, target);
+        final boolean finishedInTime = waitForPathfinderTaskCompletion(task);
+        Assert.assertTrue(finishedInTime);
+
+        final Path path = task.getPath();
+        Assert.assertNotNull(path);
+        Assert.assertTrue(isPathValid(path));
+
+        final WorldPoint upperLeftCorner = new WorldPoint(3418, 3480, 0);
+        final WorldPoint bottomRightCorner = new WorldPoint(3423, 3478, 0);
+        final boolean looseRailingShortcutUsed = path.getMovements().stream().anyMatch((movement) ->
+                Util.isPointInsideRectangle(upperLeftCorner, bottomRightCorner, movement.getDestination()));
+        Assert.assertTrue(looseRailingShortcutUsed);
     }
 }

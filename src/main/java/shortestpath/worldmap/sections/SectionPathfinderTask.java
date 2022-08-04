@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiPredicate;
 
 public class SectionPathfinderTask implements Runnable {
     private final WorldMap worldMap;
@@ -43,42 +44,51 @@ public class SectionPathfinderTask implements Runnable {
 
     @Override
     public void run() {
-        Integer startSectionId = sectionMapper.getSectionId(start);
-        Integer targetSectionId = sectionMapper.getSectionId(target);
-        if (startSectionId == null || targetSectionId == null) {
+        Integer startSection = sectionMapper.getSectionId(start);
+        Integer targetSection = sectionMapper.getSectionId(target);
+        if (startSection == null || targetSection == null) {
             status = PathfinderTaskStatus.CANCELLED;
             return;
         }
 
+        final BiPredicate<SectionNode, Integer> hasNodeBeenInSectionBefore = (node, section) -> {
+            final List<Transport> route = node.getTransportRoute();
+            final Set<Integer> visitedSections = new HashSet<>();
+
+            if (route.isEmpty()) {
+                return false;
+            }
+
+            final Transport firstTransport = route.get(0);
+            final MovementSections firstTransportSections = sectionMapper.getSectionId(firstTransport);
+            visitedSections.add(firstTransportSections.getOriginSection());
+
+            for (final Transport transport : route) {
+                final MovementSections transportSections = sectionMapper.getSectionId(transport);
+                if (!visitedSections.add(transportSections.getDestinationSection())) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         List<SectionNode> boundary = new LinkedList<>();
-        boundary.add(new SectionNode(startSectionId, null, null));
+        boundary.add(new SectionNode(startSection, null, null));
 
         Set<Integer> visited = new HashSet<>();
-        visited.add(startSectionId);
+        visited.add(startSection);
 
         while (!boundary.isEmpty() && !shouldCancelTask) {
-            SectionNode node = boundary.remove(0);
+            final SectionNode currentNode = boundary.remove(0);
+            final List<SectionNode> neighbors = getNeighbors(currentNode);
+            for (final SectionNode node : neighbors) {
 
-            for (final Transport transport : worldMap.getTransports()) {
-                final MovementSections movementSections = sectionMapper.getSectionId(transport);
-                final Integer transportOriginSectionId = movementSections.getOriginSection();
-                final Integer transportDestinationSectionId = movementSections.getDestinationSection();
-                assert transportOriginSectionId != null;
-                assert transportDestinationSectionId != null;
-
-                if (transportOriginSectionId.equals(transportDestinationSectionId)) {
-                    continue;
+                final MovementSections nodeSections = sectionMapper.getSectionId(node.transport);
+                if (node.getSection() == targetSection) {
+                    routes.add(new SectionRoute(start, target, node.getTransportRoute()));
                 }
-
-                if (transportOriginSectionId.equals(node.getSection())) {
-                    if (transportDestinationSectionId.equals(targetSectionId)) {
-                        final SectionNode reachedDestinationNode = new SectionNode(transportDestinationSectionId, node, transport);
-                        final SectionRoute route = new SectionRoute(start, target, reachedDestinationNode.getTransportRoute());
-                        routes.add(route);
-                    }
-                    else if (visited.add(transportDestinationSectionId)) {
-                        boundary.add(new SectionNode(transportDestinationSectionId, node, transport));
-                    }
+                else {
+                    boundary.add(node);
                 }
             }
         }
@@ -89,5 +99,52 @@ public class SectionPathfinderTask implements Runnable {
         else {
             status = PathfinderTaskStatus.DONE;
         }
+    }
+
+    private List<SectionNode> getNeighbors(final SectionNode node) {
+        final Integer nodeSection = node.getSection();
+        final BiPredicate<SectionNode, Integer> hasNodeBeenInSectionBefore = (nodeToCheck, section) -> {
+            final List<Transport> route = nodeToCheck.getTransportRoute();
+            final Set<Integer> visitedSections = new HashSet<>();
+
+            if (route.isEmpty()) {
+                return false;
+            }
+
+            final Transport firstTransport = route.get(0);
+            final MovementSections firstTransportSections = sectionMapper.getSectionId(firstTransport);
+            visitedSections.add(firstTransportSections.getOriginSection());
+
+            for (final Transport transport : route) {
+                final MovementSections transportSections = sectionMapper.getSectionId(transport);
+                if (!visitedSections.add(transportSections.getDestinationSection())) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        final List<SectionNode> neighbors = new ArrayList<>();
+        for (final Transport transport : worldMap.getTransports()) {
+            final MovementSections transportSections = sectionMapper.getSectionId(transport);
+            if (!transportSections.getOriginSection().equals(nodeSection)) {
+                continue;
+            }
+            if (transportSections.getOriginSection().equals(transportSections.getDestinationSection())) {
+                continue;
+            }
+
+            final boolean neighborToSectionAlreadyAdded = neighbors.stream().anyMatch((neighborNode) -> {
+                return neighborNode.section == transportSections.getDestinationSection();
+            });
+            if (neighborToSectionAlreadyAdded) {
+                continue;
+            }
+
+            if (!hasNodeBeenInSectionBefore.test(node, transportSections.getDestinationSection())) {
+                neighbors.add(new SectionNode(transportSections.getDestinationSection(), node, transport));
+            }
+        }
+        return neighbors;
     }
 }
