@@ -47,21 +47,31 @@ public class PathfinderTaskHandler {
 
     public void evaluateTasks() {
         final List<PathfinderTaskInfo> tasksToRemove = new ArrayList<>();
-        for (final PathfinderTaskInfo task : pathfinderTasks) {
-            evaluateTaskHasBetterPath(task);
-            if (task.getTicksSinceBetterPath() >= configProvider.ticksWithoutProgressBeforeCancelingTask()) {
-                task.getTask().cancelTask();
-                tasksToRemove.add(task);
+        for (final PathfinderTaskInfo taskInfo : pathfinderTasks) {
+            final PathfinderTask task = taskInfo.getTask();
+            if (task != null && (task.getStatus() == PathfinderTaskStatus.DONE || task.getStatus() == PathfinderTaskStatus.CANCELLED)) {
+                tasksToRemove.add(taskInfo);
+                continue;
+            }
+
+            if (configProvider.ticksWithoutProgressBeforeCancelingTask() < 0) {
+                continue;
+            }
+            evaluateTaskHasBetterPath(taskInfo);
+            if (taskInfo.getTicksSinceBetterPath() >= configProvider.ticksWithoutProgressBeforeCancelingTask()) {
+                taskInfo.getTask().cancelTask();
+                tasksToRemove.add(taskInfo);
+
+                final WorldPoint taskStart = taskInfo.getTask().getStart();
+                final WorldPoint taskTarget = taskInfo.getTask().getTarget();
+                log.debug("Task from " + Util.worldPointToString(taskStart) + " to " + Util.worldPointToString(taskTarget)
+                        + " has made no progress in " + taskInfo.getTicksSinceBetterPath() + " ticks. Cancelling task.");
             }
         }
 
         // Cannot remove entries while iterating through the list, so collect paths to remove
         // them here instead.
         for (final PathfinderTaskInfo task : tasksToRemove) {
-            final WorldPoint taskStart = task.getTask().getStart();
-            final WorldPoint taskTarget = task.getTask().getTarget();
-            log.debug("Task from " + Util.worldPointToString(taskStart) + " to " + Util.worldPointToString(taskTarget)
-                    + " has made no progress in " + task.getTicksSinceBetterPath() + " ticks. Cancelling task.");
             pathfinderTasks.remove(task);
         }
     }

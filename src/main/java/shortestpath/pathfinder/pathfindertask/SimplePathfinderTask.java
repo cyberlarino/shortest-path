@@ -37,7 +37,7 @@ public class SimplePathfinderTask implements PathfinderTask {
     private final Predicate<Transport> transportPredicate;
     private boolean shouldCancelTask = false;
 
-    public SimplePathfinderTask(final WorldMap worldMap, final PathfinderConfig config, final WorldPoint start, final WorldPoint target) {
+    SimplePathfinderTask(final WorldMap worldMap, final PathfinderConfig config, final WorldPoint start, final WorldPoint target, final Predicate<Transport> transportPredicate) {
         this.worldMap = worldMap;
         this.start = start;
         this.target = target;
@@ -49,9 +49,13 @@ public class SimplePathfinderTask implements PathfinderTask {
             }
             return true;
         };
-        this.transportPredicate = config.getCanPlayerUseTransportPredicate();
+        this.transportPredicate = transportPredicate;
 
         new Thread(this).start();
+    }
+
+    public SimplePathfinderTask(final WorldMap worldMap, final PathfinderConfig config, final WorldPoint start, final WorldPoint target) {
+        this(worldMap, config, start, target, config.getCanPlayerUseTransportPredicate());
     }
 
     public void cancelTask() {
@@ -81,10 +85,6 @@ public class SimplePathfinderTask implements PathfinderTask {
 
             graph.evaluateBoundaryNode(indexToEvaluate, this.neighborPredicate, this.transportPredicate);
         }
-
-        final String taskStatusInfo = (shouldCancelTask ? "cancelled" : "finished calculating");
-        log.debug("PathfinderTask done (" + taskStatusInfo + "); " + graph.getVisited().size() + " visited nodes, "
-                + graph.getBoundary().size() + " boundary nodes");
 
         if (shouldCancelTask) {
             status = PathfinderTaskStatus.CANCELLED;

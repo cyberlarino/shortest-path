@@ -4,6 +4,7 @@ import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.pathfinder.path.Transport;
 
+import java.util.Comparator;
 import java.util.List;
 
 public class SectionRoute {

@@ -33,7 +33,7 @@ public class ComplexPathfinderTaskTest {
     // Utility functions
     private static boolean waitForPathfinderTaskCompletion(final ComplexPathfinderTask task) {
         long startTime = System.nanoTime();
-        while (task.getStatus() == PathfinderTaskStatus.CALCULATING) {
+        while (task.getStatus() != PathfinderTaskStatus.DONE) {
             if ((System.nanoTime() - startTime) >= TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS)) {
                 return false;
             }
