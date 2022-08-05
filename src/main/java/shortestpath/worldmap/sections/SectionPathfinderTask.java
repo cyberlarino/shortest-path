@@ -2,6 +2,7 @@ package shortestpath.worldmap.sections;
 
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
+import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
 import shortestpath.worldmap.WorldMap;
@@ -12,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 public class SectionPathfinderTask implements Runnable {
     private final WorldMap worldMap;
@@ -26,14 +28,21 @@ public class SectionPathfinderTask implements Runnable {
     @Getter
     private final List<SectionRoute> routes = new ArrayList<>();
 
+    final Predicate<Transport> transportPredicate;
     private boolean shouldCancelTask = false;
 
     public SectionPathfinderTask(final WorldMap worldMap, final SectionMapper sectionMapper,
                                  final WorldPoint start, final WorldPoint target) {
+        this(worldMap, sectionMapper, start, target, (x) -> true);
+    }
+
+    public SectionPathfinderTask(final WorldMap worldMap, final SectionMapper sectionMapper,
+                                 final WorldPoint start, final WorldPoint target, final Predicate<Transport> transportPredicate) {
         this.worldMap = worldMap;
         this.sectionMapper = sectionMapper;
         this.start = start;
         this.target = target;
+        this.transportPredicate = transportPredicate;
 
         new Thread(this).start();
     }
@@ -138,6 +147,10 @@ public class SectionPathfinderTask implements Runnable {
                 return neighborNode.section == transportSections.getDestinationSection();
             });
             if (neighborToSectionAlreadyAdded) {
+                continue;
+            }
+
+            if (!transportPredicate.test(transport)) {
                 continue;
             }
 

@@ -93,6 +93,10 @@ public class PathfinderRequestHandler {
             return;
         }
 
+        if (activeTask != null && activeTask.getStatus() != PathfinderTaskStatus.DONE) {
+            activeTask.cancelTask();
+        }
+
         activeTask = pathfinderTaskHandler.newTask(start, target);
         log.debug("New PathfinderTask started: " + Util.worldPointToString(start) + " to " + Util.worldPointToString(target));
     }

@@ -25,7 +25,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
@@ -268,5 +267,22 @@ public class PathfinderRequestHandlerTest {
 
         pathfinderRequestHandler.setTarget(unreachablePoint);
         verify(pathfinderTaskHandlerMock, never()).newTask(any(), any());
+    }
+
+    @Test
+    public void testCancelCurrentTaskOnNewRequest() {
+        final WorldPoint somePlayerPosition = new WorldPoint(3166, 3479, 0);
+        when(clientInfoProviderMock.getPlayerLocation()).thenReturn(somePlayerPosition);
+        when(pathfinderTaskHandlerMock.newTask(any(), any())).thenReturn(simplePathfinderTaskMock);
+        when(simplePathfinderTaskMock.getStatus()).thenReturn(PathfinderTaskStatus.CALCULATING);
+
+        // Make a request
+        final WorldPoint someTarget = new WorldPoint(3166, 3481, 0);
+        pathfinderRequestHandler.setTarget(someTarget);
+
+        // Make a new request, other task which is not done should be cancelled
+        final WorldPoint someOtherTarget = new WorldPoint(3171, 3404, 0);
+        pathfinderRequestHandler.setTarget(someOtherTarget);
+        verify(simplePathfinderTaskMock).cancelTask();
     }
 }

@@ -4,8 +4,10 @@ import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 import shortestpath.worldmap.sections.SectionMapper;
 import shortestpath.worldmap.sections.SectionPathfinderTask;
@@ -21,11 +23,13 @@ public class SectionPathfinderTaskTest {
 
     private WorldMapProvider worldMapProvider;
     private SectionMapper sectionMapper;
+    private PathfinderConfig pathfinderConfig;
 
     @Before
     public void setup() {
         this.worldMapProvider = new WorldMapProvider();
         this.sectionMapper = SectionMapper.fromFile(worldMapProvider);
+        this.pathfinderConfig = new PathfinderConfig();
     }
 
     // Utility functions
@@ -42,6 +46,13 @@ public class SectionPathfinderTaskTest {
             }
         }
         return true;
+    }
+
+    private boolean looseRailingShortcutUsed(final SectionRoute route) {
+        final WorldPoint upperLeftCorner = new WorldPoint(3418, 3480, 0);
+        final WorldPoint bottomRightCorner = new WorldPoint(3424, 3475, 0);
+        final Predicate<WorldPoint> pointInsideShortcutBoundary = (point) -> Util.isPointInsideRectangle(upperLeftCorner, bottomRightCorner, point);
+        return route.getTransports().stream().anyMatch((transport) -> pointInsideShortcutBoundary.test(transport.getOrigin()) || pointInsideShortcutBoundary.test(transport.getDestination()));
     }
 
     private boolean allRoutesValid(final List<SectionRoute> routes, final WorldPoint start, final WorldPoint target) {
@@ -116,5 +127,40 @@ public class SectionPathfinderTaskTest {
         final List<SectionRoute> routes = sectionPathfinderTask.getRoutes();
         Assert.assertTrue(allRoutesValid(routes, start, target));
         Assert.assertTrue(routes.size() > 0);
+    }
+
+    @Test
+    public void agilityShortcutTest_meetsRequirements() {
+        final WorldPoint start = new WorldPoint(3395, 3485, 0);
+        final WorldPoint target = new WorldPoint(3478, 9839, 0);
+        pathfinderConfig.agilityLevel = 65;
+
+        SectionPathfinderTask sectionPathfinderTask = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target, pathfinderConfig.getCanPlayerUseTransportPredicate());
+        final boolean taskCompletedInTime = waitForPathfinderTaskCompletion(sectionPathfinderTask);
+        Assert.assertTrue(taskCompletedInTime);
+
+        final List<SectionRoute> routes = sectionPathfinderTask.getRoutes();
+        Assert.assertTrue(allRoutesValid(routes, start, target));
+        Assert.assertTrue(routes.size() > 0);
+
+        final boolean looseRailingShortcutUsedInAnyRoute = routes.stream().anyMatch(this::looseRailingShortcutUsed);
+        Assert.assertTrue(looseRailingShortcutUsedInAnyRoute);
+    }
+
+    @Test
+    public void agilityShortcutTest_doesNotMeetRequirements() {
+        final WorldPoint start = new WorldPoint(3395, 3485, 0);
+        final WorldPoint target = new WorldPoint(3478, 9839, 0);
+
+        SectionPathfinderTask sectionPathfinderTask = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target, pathfinderConfig.getCanPlayerUseTransportPredicate());
+        final boolean taskCompletedInTime = waitForPathfinderTaskCompletion(sectionPathfinderTask);
+        Assert.assertTrue(taskCompletedInTime);
+
+        final List<SectionRoute> routes = sectionPathfinderTask.getRoutes();
+        Assert.assertTrue(allRoutesValid(routes, start, target));
+        Assert.assertTrue(routes.size() > 0);
+
+        final boolean looseRailingShortcutUsedInAnyRoute = routes.stream().anyMatch(this::looseRailingShortcutUsed);
+        Assert.assertFalse(looseRailingShortcutUsedInAnyRoute);
     }
 }

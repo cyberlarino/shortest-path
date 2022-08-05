@@ -48,9 +48,10 @@ public class ComplexPathfinderTask implements PathfinderTask {
         this.start = start;
         this.target = target;
 
-        this.sectionPathfinderTask = new SectionPathfinderTask(worldMap, sectionMapper, start, target);
+        this.sectionPathfinderTask = new SectionPathfinderTask(worldMap, sectionMapper, start, target, pathfinderConfig.getCanPlayerUseTransportPredicate());
         new Thread(this).start();
     }
+
     @Nullable
     public Path getPath() {
         if (activeTask == null) {
@@ -106,8 +107,18 @@ public class ComplexPathfinderTask implements PathfinderTask {
                     case DONE:
                     case CANCELLED:
                         tasksToRemove.add(routeTask);
-                    case CALCULATING:
                         shouldTaskReplaceActiveTask(routeTask);
+                        break;
+                    case CALCULATING:
+                        final boolean activeTaskDone = activeTask != null && activeTask.getStatus() == PathfinderTaskStatus.DONE;
+                        final boolean bothTasksHavePath = (activeTaskDone && activeTask.getPath() != null && routeTask.getPath() != null);
+                        // If path being calculated is already worse than current active path, no reason to calculate it
+                        if (bothTasksHavePath && routeTask.getPath().getMovements().size() > activeTask.getPath().getMovements().size()) {
+                            routeTask.cancelTask();
+                        }
+                        else {
+                            shouldTaskReplaceActiveTask(routeTask);
+                        }
                         break;
                     default:
                         throw new RuntimeException("Unexpected task status gotten: " + taskStatus);

@@ -116,7 +116,7 @@ public class ComplexPathfinderTaskTest {
         Assert.assertTrue(isPathValid(path));
 
         final WorldPoint upperLeftCorner = new WorldPoint(3418, 3480, 0);
-        final WorldPoint bottomRightCorner = new WorldPoint(3423, 3478, 0);
+        final WorldPoint bottomRightCorner = new WorldPoint(3424, 3475, 0);
         final boolean looseRailingShortcutUsed = path.getMovements().stream().anyMatch((movement) ->
                 Util.isPointInsideRectangle(upperLeftCorner, bottomRightCorner, movement.getDestination()));
         Assert.assertTrue(looseRailingShortcutUsed);
