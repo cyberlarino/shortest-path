@@ -1,6 +1,7 @@
 package shortestpath.pathfinder.path;
 
 import lombok.Getter;
+import lombok.Value;
 import net.runelite.api.coords.WorldPoint;
 
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.Scanner;
 /**
  * This class represents a travel point between two WorldPoints.
  */
+@Value
 public class Transport implements Movement {
     @Override
     public MovementType getType() {
@@ -24,23 +26,23 @@ public class Transport implements Movement {
 
     /** The starting point of this transport */
     @Getter
-    private final WorldPoint origin;
+    WorldPoint origin;
 
     /** The ending point of this transport */
     @Getter
-    private final WorldPoint destination;
+    WorldPoint destination;
 
     /** The agility level required to use this transport */
     @Getter
-    private final int agilityLevelRequired;
+    int agilityLevelRequired;
 
     /** The ranged level required to use this transport */
     @Getter
-    private final int rangedLevelRequired;
+    int rangedLevelRequired;
 
     /** The strength level required to use this transport */
     @Getter
-    private final int strengthLevelRequired;
+    int strengthLevelRequired;
 
     public Transport(final WorldPoint origin, final WorldPoint destination, int agilityLevelRequired, int rangedLevelRequired, int strengthLevelRequired) {
         this.origin = origin;

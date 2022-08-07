@@ -2,7 +2,6 @@ package shortestpath.worldmap.sections;
 
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
 import shortestpath.worldmap.WorldMap;
@@ -53,8 +52,8 @@ public class SectionPathfinderTask implements Runnable {
 
     @Override
     public void run() {
-        Integer startSection = sectionMapper.getSectionId(start);
-        Integer targetSection = sectionMapper.getSectionId(target);
+        Integer startSection = sectionMapper.getSection(start);
+        Integer targetSection = sectionMapper.getSection(target);
         if (startSection == null || targetSection == null) {
             status = PathfinderTaskStatus.CANCELLED;
             return;
@@ -69,11 +68,11 @@ public class SectionPathfinderTask implements Runnable {
             }
 
             final Transport firstTransport = route.get(0);
-            final MovementSections firstTransportSections = sectionMapper.getSectionId(firstTransport);
+            final MovementSections firstTransportSections = sectionMapper.getSection(firstTransport);
             visitedSections.add(firstTransportSections.getOriginSection());
 
             for (final Transport transport : route) {
-                final MovementSections transportSections = sectionMapper.getSectionId(transport);
+                final MovementSections transportSections = sectionMapper.getSection(transport);
                 if (!visitedSections.add(transportSections.getDestinationSection())) {
                     return true;
                 }
@@ -92,7 +91,7 @@ public class SectionPathfinderTask implements Runnable {
             final List<SectionNode> neighbors = getNeighbors(currentNode);
             for (final SectionNode node : neighbors) {
 
-                final MovementSections nodeSections = sectionMapper.getSectionId(node.transport);
+                final MovementSections nodeSections = sectionMapper.getSection(node.transport);
                 if (node.getSection() == targetSection) {
                     routes.add(new SectionRoute(start, target, node.getTransportRoute()));
                 }
@@ -121,11 +120,11 @@ public class SectionPathfinderTask implements Runnable {
             }
 
             final Transport firstTransport = route.get(0);
-            final MovementSections firstTransportSections = sectionMapper.getSectionId(firstTransport);
+            final MovementSections firstTransportSections = sectionMapper.getSection(firstTransport);
             visitedSections.add(firstTransportSections.getOriginSection());
 
             for (final Transport transport : route) {
-                final MovementSections transportSections = sectionMapper.getSectionId(transport);
+                final MovementSections transportSections = sectionMapper.getSection(transport);
                 if (!visitedSections.add(transportSections.getDestinationSection())) {
                     return true;
                 }
@@ -135,7 +134,7 @@ public class SectionPathfinderTask implements Runnable {
 
         final List<SectionNode> neighbors = new ArrayList<>();
         for (final Transport transport : worldMap.getTransports()) {
-            final MovementSections transportSections = sectionMapper.getSectionId(transport);
+            final MovementSections transportSections = sectionMapper.getSection(transport);
             if (!transportSections.getOriginSection().equals(nodeSection)) {
                 continue;
             }

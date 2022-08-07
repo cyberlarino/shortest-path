@@ -1,4 +1,4 @@
-package pathfinder;
+package unittests.worldmap.sections;
 
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
@@ -7,6 +7,7 @@ import org.junit.Test;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.utils.PathfinderUtil;
 import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 import shortestpath.worldmap.sections.SectionMapper;
@@ -33,31 +34,16 @@ public class SectionPathfinderTaskTest {
     }
 
     // Utility functions
-    private static boolean waitForPathfinderTaskCompletion(final SectionPathfinderTask task) {
-        long startTime = System.nanoTime();
-        while (task.getStatus() == PathfinderTaskStatus.CALCULATING) {
-            if ((System.nanoTime() - startTime) >= TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS)) {
-                return false;
-            }
-
-            try {
-                TimeUnit.MILLISECONDS.sleep(10);
-            } catch (Exception ignore) {
-            }
-        }
-        return true;
-    }
-
     private boolean looseRailingShortcutUsed(final SectionRoute route) {
         final WorldPoint upperLeftCorner = new WorldPoint(3418, 3480, 0);
         final WorldPoint bottomRightCorner = new WorldPoint(3424, 3475, 0);
-        final Predicate<WorldPoint> pointInsideShortcutBoundary = (point) -> Util.isPointInsideRectangle(upperLeftCorner, bottomRightCorner, point);
+        final Predicate<WorldPoint> pointInsideShortcutBoundary = PathfinderUtil.isPointInsideRectanglePredicate(upperLeftCorner, bottomRightCorner);
         return route.getTransports().stream().anyMatch((transport) -> pointInsideShortcutBoundary.test(transport.getOrigin()) || pointInsideShortcutBoundary.test(transport.getDestination()));
     }
 
     private boolean allRoutesValid(final List<SectionRoute> routes, final WorldPoint start, final WorldPoint target) {
-        final Integer startSection = sectionMapper.getSectionId(start);
-        final Integer targetSection = sectionMapper.getSectionId(target);
+        final Integer startSection = sectionMapper.getSection(start);
+        final Integer targetSection = sectionMapper.getSection(target);
 
         final Predicate<SectionRoute> isRouteValid = route -> {
             if (route.getTransports().isEmpty()) {
@@ -71,26 +57,26 @@ public class SectionPathfinderTaskTest {
                 return false;
             }
 
-            final Integer routeStartSection = sectionMapper.getSectionId(route.getOrigin());
-            final Integer routeTargetSection = sectionMapper.getSectionId(route.getDestination());
+            final Integer routeStartSection = sectionMapper.getSection(route.getOrigin());
+            final Integer routeTargetSection = sectionMapper.getSection(route.getDestination());
             if (!Objects.equals(routeStartSection, startSection) || !Objects.equals(routeTargetSection, targetSection)) {
                 return false;
             }
 
-            final Integer firstTransportSection = sectionMapper.getSectionId(route.getTransports().get(0).getOrigin());
+            final Integer firstTransportSection = sectionMapper.getSection(route.getTransports().get(0).getOrigin());
             if (!Objects.equals(routeStartSection, firstTransportSection)) {
                 return false;
             }
 
-            final Integer lastTransportSection = sectionMapper.getSectionId(
+            final Integer lastTransportSection = sectionMapper.getSection(
                     route.getTransports().get(route.getTransports().size() - 1).getDestination());
             if (!Objects.equals(routeTargetSection, lastTransportSection)) {
                 return false;
             }
 
             for (int i = 0; i < route.getTransports().size() - 1; ++i) {
-                final Integer currentTransportDestinationSection = sectionMapper.getSectionId(route.getTransports().get(i).getDestination());
-                final Integer nextTransportOriginSection = sectionMapper.getSectionId(route.getTransports().get(i + 1).getOrigin());
+                final Integer currentTransportDestinationSection = sectionMapper.getSection(route.getTransports().get(i).getDestination());
+                final Integer nextTransportOriginSection = sectionMapper.getSection(route.getTransports().get(i + 1).getOrigin());
                 if (!Objects.equals(currentTransportDestinationSection, nextTransportOriginSection)) {
                     return false;
                 }
@@ -107,7 +93,7 @@ public class SectionPathfinderTaskTest {
         final WorldPoint target = new WorldPoint(3089, 3523, 0);
 
         SectionPathfinderTask sectionPathfinderTask = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target);
-        final boolean taskCompletedInTime = waitForPathfinderTaskCompletion(sectionPathfinderTask);
+        final boolean taskCompletedInTime = PathfinderUtil.waitForTaskCompletion(sectionPathfinderTask);
         Assert.assertTrue(taskCompletedInTime);
 
         final List<SectionRoute> routes = sectionPathfinderTask.getRoutes();
@@ -121,7 +107,7 @@ public class SectionPathfinderTaskTest {
         final WorldPoint target = new WorldPoint(3224, 3218, 0);
 
         SectionPathfinderTask sectionPathfinderTask = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target);
-        final boolean taskCompletedInTime = waitForPathfinderTaskCompletion(sectionPathfinderTask);
+        final boolean taskCompletedInTime = PathfinderUtil.waitForTaskCompletion(sectionPathfinderTask);
         Assert.assertTrue(taskCompletedInTime);
 
         final List<SectionRoute> routes = sectionPathfinderTask.getRoutes();
@@ -136,7 +122,7 @@ public class SectionPathfinderTaskTest {
         pathfinderConfig.agilityLevel = 65;
 
         SectionPathfinderTask sectionPathfinderTask = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target, pathfinderConfig.getCanPlayerUseTransportPredicate());
-        final boolean taskCompletedInTime = waitForPathfinderTaskCompletion(sectionPathfinderTask);
+        final boolean taskCompletedInTime = PathfinderUtil.waitForTaskCompletion(sectionPathfinderTask);
         Assert.assertTrue(taskCompletedInTime);
 
         final List<SectionRoute> routes = sectionPathfinderTask.getRoutes();
@@ -153,7 +139,7 @@ public class SectionPathfinderTaskTest {
         final WorldPoint target = new WorldPoint(3478, 9839, 0);
 
         SectionPathfinderTask sectionPathfinderTask = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target, pathfinderConfig.getCanPlayerUseTransportPredicate());
-        final boolean taskCompletedInTime = waitForPathfinderTaskCompletion(sectionPathfinderTask);
+        final boolean taskCompletedInTime = PathfinderUtil.waitForTaskCompletion(sectionPathfinderTask);
         Assert.assertTrue(taskCompletedInTime);
 
         final List<SectionRoute> routes = sectionPathfinderTask.getRoutes();

@@ -1,5 +1,9 @@
 package shortestpath.pathfinder.pathfindertask;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Predicate;
 
 import lombok.Getter;
@@ -8,6 +12,7 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.pathfinder.Node;
 import shortestpath.pathfinder.NodeGraph;
+import shortestpath.pathfinder.OrdinalDirection;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.path.Transport;
@@ -37,25 +42,31 @@ public class SimplePathfinderTask implements PathfinderTask {
     private final Predicate<Transport> transportPredicate;
     private boolean shouldCancelTask = false;
 
-    SimplePathfinderTask(final WorldMap worldMap, final PathfinderConfig config, final WorldPoint start, final WorldPoint target, final Predicate<Transport> transportPredicate) {
+
+    public SimplePathfinderTask(final WorldMap worldMap, final WorldPoint start, final WorldPoint target, final PathfinderConfig config) {
         this.worldMap = worldMap;
         this.start = start;
         this.target = target;
 
         final boolean isStartOrTargetInWilderness = isInWilderness(start) || isInWilderness(target);
-        this.neighborPredicate = (point) -> {
-            if (config.avoidWilderness && !isStartOrTargetInWilderness && isInWilderness(point)) {
-                return false;
-            }
-            return true;
-        };
-        this.transportPredicate = transportPredicate;
+        this.neighborPredicate = (point) -> !config.avoidWilderness || isStartOrTargetInWilderness || !isInWilderness(point);
+        this.transportPredicate = config.getCanPlayerUseTransportPredicate();
 
         new Thread(this).start();
     }
 
-    public SimplePathfinderTask(final WorldMap worldMap, final PathfinderConfig config, final WorldPoint start, final WorldPoint target) {
-        this(worldMap, config, start, target, config.getCanPlayerUseTransportPredicate());
+    public SimplePathfinderTask(final WorldMap worldMap, final WorldPoint start, final WorldPoint target) {
+        this(worldMap, start, target, (x) -> true);
+    }
+
+    public SimplePathfinderTask(final WorldMap worldMap, final WorldPoint start, final WorldPoint target, final Predicate<Transport> transportPredicate) {
+        this.worldMap = worldMap;
+        this.start = start;
+        this.target = target;
+        this.neighborPredicate = (point) -> true;
+        this.transportPredicate = transportPredicate;
+
+        new Thread(this).start();
     }
 
     public void cancelTask() {

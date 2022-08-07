@@ -12,8 +12,11 @@ import shortestpath.worldmap.WorldMapProvider;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -33,17 +36,18 @@ import com.google.gson.Gson;
 
 public class SectionMapper {
     private static final Path DEFAULT_SECTION_MAP_ZIP_PATH = Paths.get("src/main/resources/section-map.zip");
-    private static final ZipEntry DEFAULT_SECTION_MAP_ZIP_ENTRY = new ZipEntry("section-map.json");
+    private static final ZipEntry SECTIONS_ZIP_ENTRY = new ZipEntry("section-map.json");
 
-    private final WorldMapProvider worldMapProvider;
     private List<Set<WorldPoint>> sections = new ArrayList<>();
-    private Map<Movement, MovementSections> movementSectionsMap = new HashMap<>();
+    private final WorldMapProvider worldMapProvider;
+    private final Map<Movement, MovementSections> movementSectionsMap = new HashMap<>();
 
     public SectionMapper(final WorldMapProvider worldMapProvider) {
         this.worldMapProvider = worldMapProvider;
     }
 
     public void findSections() {
+        sections = new ArrayList<>();
         for (final Transport transport : worldMapProvider.getWorldMap().getTransports()) {
             floodFill(transport.getOrigin());
             floodFill(transport.getDestination());
@@ -51,7 +55,7 @@ public class SectionMapper {
     }
 
     @Nullable
-    public Integer getSectionId(final WorldPoint point) {
+    public Integer getSection(final WorldPoint point) {
         for (int i = 0; i < sections.size(); ++i) {
             if (sections.get(i).contains(point)) {
                 return i;
@@ -60,11 +64,11 @@ public class SectionMapper {
         return null;
     }
 
-    public MovementSections getSectionId(final Movement movement) {
+    public MovementSections getSection(final Movement movement) {
         MovementSections movementSections = movementSectionsMap.get(movement);
         if (movementSections == null) {
-            final Integer originSection = getSectionId(movement.getOrigin());
-            final Integer destinationSection = getSectionId(movement.getDestination());
+            final Integer originSection = getSection(movement.getOrigin());
+            final Integer destinationSection = getSection(movement.getDestination());
             movementSections = new MovementSections(originSection, destinationSection);
             movementSectionsMap.put(movement, movementSections);
         }
@@ -72,7 +76,7 @@ public class SectionMapper {
     }
 
     private void floodFill(final WorldPoint point) {
-        if (getSectionId(point) != null) {
+        if (getSection(point) != null) {
             return;
         }
 
@@ -91,23 +95,37 @@ public class SectionMapper {
         }
     }
 
-    public void saveSectionsToFile() throws IOException {
-        saveSectionsToFile(DEFAULT_SECTION_MAP_ZIP_PATH, DEFAULT_SECTION_MAP_ZIP_ENTRY);
+    public void toFile() throws IOException {
+        toFile(DEFAULT_SECTION_MAP_ZIP_PATH);
     }
 
-    public void saveSectionsToFile(final Path filepath, final ZipEntry zipEntry) throws IOException {
-        Gson gson = new Gson();
-        Type sectionType = new TypeToken<HashSet<WorldPoint>>(){}.getType();
-        ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(filepath));
-        out.putNextEntry(zipEntry);
-        JsonWriter writer = new JsonWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
-        writer.setIndent("  ");
-        writer.beginArray();
-        for (Set<WorldPoint> section : sections) {
-            gson.toJson(section, sectionType, writer);
+    public void toFile(final Path path) {
+        try (final ZipOutputStream outputStream = new ZipOutputStream(Files.newOutputStream(path))) {
+            outputStream.putNextEntry(SECTIONS_ZIP_ENTRY);
+            saveSectionsToFile(outputStream);
+            outputStream.closeEntry();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
         }
-        writer.endArray();
-        writer.close();
+    }
+
+    private void saveSectionsToFile(final OutputStream outputStream) {
+        final Gson gson = new Gson();
+        final Type sectionType = new TypeToken<HashSet<WorldPoint>>() {
+        }.getType();
+
+        try {
+            final JsonWriter writer = new JsonWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
+            writer.setIndent("  ");
+            writer.beginArray();
+            for (final Set<WorldPoint> section : sections) {
+                gson.toJson(section, sectionType, writer);
+            }
+            writer.endArray();
+            writer.flush();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public static SectionMapper fromFile(final WorldMapProvider worldMapProvider) {
@@ -115,26 +133,46 @@ public class SectionMapper {
     }
 
     public static SectionMapper fromFile(final Path filepath, final WorldMapProvider worldMapProvider) {
+        List<Set<WorldPoint>> sections = null;
+        try (final ZipInputStream inputStream = new ZipInputStream(Files.newInputStream(filepath))) {
+            ZipEntry zipEntry;
+            while ((zipEntry = inputStream.getNextEntry()) != null) {
+                if (SECTIONS_ZIP_ENTRY.getName().equals(zipEntry.getName())) {
+                    sections = getSectionsFromFile(inputStream);
+                }
+            }
+
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        if (sections == null) {
+            throw new RuntimeException(String.format("%s not found/parsed correctly from %s.",
+                    SECTIONS_ZIP_ENTRY.getName(), filepath.getFileName()));
+        }
+
+        final SectionMapper sectionMapper = new SectionMapper(worldMapProvider);
+        sectionMapper.sections = sections;
+        return sectionMapper;
+    }
+
+    private static List<Set<WorldPoint>> getSectionsFromFile(final InputStream inputStream) {
         final Gson gson = new Gson();
-        final Type sectionType = new TypeToken<HashSet<WorldPoint>>(){}.getType();
+        final Type sectionType = new TypeToken<HashSet<WorldPoint>>() {
+        }.getType();
+
         final List<Set<WorldPoint>> sections = new ArrayList<>();
         try {
-            ZipInputStream in = new ZipInputStream(Files.newInputStream(filepath));
-            in.getNextEntry();
-            JsonReader reader = new JsonReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+            final JsonReader reader = new JsonReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
             reader.beginArray();
             while (reader.hasNext()) {
                 final Set<WorldPoint> section = gson.fromJson(reader, sectionType);
                 sections.add(section);
             }
             reader.endArray();
-            reader.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
         }
-
-        SectionMapper sectionMapper = new SectionMapper(worldMapProvider);
-        sectionMapper.sections = sections;
-        return sectionMapper;
+        return sections;
     }
 }

@@ -1,17 +1,18 @@
-package pathfinder;
+package unittests.utils;
 
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import shortestpath.pathfinder.OrdinalDirection;
-import shortestpath.utils.Util;
+import shortestpath.utils.PathfinderUtil;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
-public class UtilTest {
+public class PathfinderUtilTest {
     @RunWith(Parameterized.class)
     public static class IsPointInsideRectangleParameterizedTest {
         @Parameterized.Parameters
@@ -58,7 +59,7 @@ public class UtilTest {
 
         @Test
         public void testIsPointInsideRectangle() {
-            final boolean result = Util.isPointInsideRectangle(rectangleCorner, rectangleOppositeCorner, point);
+            final boolean result = PathfinderUtil.isPointInsideRectangle(rectangleCorner, rectangleOppositeCorner, point);
             Assert.assertEquals(expectedResult, result);
         }
     }
@@ -69,6 +70,28 @@ public class UtilTest {
         final WorldPoint rectangleOppositeCorner = new WorldPoint(3167, 3487, 1);
         final WorldPoint point = new WorldPoint(3164, 3490, 0);
         Assert.assertThrows(RuntimeException.class, () ->
-                Util.isPointInsideRectangle(rectangleCorner, rectangleOppositeCorner, point));
+                PathfinderUtil.isPointInsideRectangle(rectangleCorner, rectangleOppositeCorner, point));
+    }
+
+    @Test
+    public void testGetPointsInsideRectangle() {
+        // Set-up, find list of points in some rectangle
+        final WorldPoint corner = new WorldPoint(3162, 3492, 0);
+        WorldPoint oppositeCorner = null;
+        final int rectangleSize = 3;
+        final Set<WorldPoint> pointsInRectangle = new HashSet<>();
+        for (int dx = 0; dx < rectangleSize; ++dx) {
+            for (int dy = 0; dy < rectangleSize; ++dy) {
+                final WorldPoint point = corner.dx(dx).dy(dy);
+                pointsInRectangle.add(point);
+
+                if (dx == rectangleSize - 1 && dy == rectangleSize - 1) {
+                    oppositeCorner = point;
+                }
+            }
+        }
+
+        final Set<WorldPoint> result = PathfinderUtil.getPointsInsideRectangle(corner, oppositeCorner);
+        Assert.assertEquals(pointsInRectangle, result);
     }
 }

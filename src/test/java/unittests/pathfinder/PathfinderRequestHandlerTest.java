@@ -1,4 +1,4 @@
-package pathfinder;
+package unittests.pathfinder;
 
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
@@ -16,6 +16,7 @@ import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
 import shortestpath.pathfinder.pathfindertask.SimplePathfinderTask;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
 import shortestpath.pathfinder.path.Walk;
+import shortestpath.utils.PathfinderUtil;
 import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 
@@ -58,12 +59,12 @@ public class PathfinderRequestHandlerTest {
         final WorldPoint outsideBorderTopLeft = new WorldPoint(3162, 3492, 0);
         final WorldPoint outsideBorderBottomRight = new WorldPoint(3167, 3487, 0);
         final boolean pointWithinGeCenter =
-                Util.isPointInsideRectangle(outsideBorderTopLeft, outsideBorderBottomRight, point);
+                PathfinderUtil.isPointInsideRectangle(outsideBorderTopLeft, outsideBorderBottomRight, point);
 
         final WorldPoint blockedRectangleTopLeft = new WorldPoint(3163, 3491, 0);
         final WorldPoint blockedRectangleBottomRight = new WorldPoint(3166, 3488, 0);
         final boolean pointWithinBlockedArea =
-                Util.isPointInsideRectangle(blockedRectangleTopLeft, blockedRectangleBottomRight, point);
+                PathfinderUtil.isPointInsideRectangle(blockedRectangleTopLeft, blockedRectangleBottomRight, point);
 
         return pointWithinGeCenter && !pointWithinBlockedArea;
     }

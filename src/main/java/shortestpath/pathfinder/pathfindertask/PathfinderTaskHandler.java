@@ -5,6 +5,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ConfigProvider;
+import shortestpath.pathfinder.path.Movement;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
@@ -80,22 +81,20 @@ public class PathfinderTaskHandler {
     public PathfinderTask newTask(final WorldPoint start, final WorldPoint target) {
         PathfinderTask task;
 
-        final Integer startSection = sectionMapper.getSectionId(start);
-        final Integer targetSection = sectionMapper.getSectionId(target);
+        final Integer startSection = sectionMapper.getSection(start);
+        final Integer targetSection = sectionMapper.getSection(target);
         if (startSection != null && targetSection != null && !startSection.equals(targetSection)) {
             task = new ComplexPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, configProvider.getPathFinderConfig(), start, target);
         }
         else {
-            task = new SimplePathfinderTask(worldMapProvider.getWorldMap(), configProvider.getPathFinderConfig(), start, target);
+            task = new SimplePathfinderTask(worldMapProvider.getWorldMap(), start, target, configProvider.getPathFinderConfig());
         }
 
         final PathfinderTaskInfo taskInfo = new PathfinderTaskInfo(task);
         pathfinderTasks.add(taskInfo);
 
-        final Integer startId = this.sectionMapper.getSectionId(start);
-        final Integer targetId = this.sectionMapper.getSectionId(target);
-        log.debug("New task. Start section: " + startId + ", target: " + targetId);
-
+        log.debug(String.format("New PathfinderTask started: %s (section %s) to %s (section %s)",
+                Util.worldPointToString(start), startSection, Util.worldPointToString(target), targetSection));
         return task;
     }
 

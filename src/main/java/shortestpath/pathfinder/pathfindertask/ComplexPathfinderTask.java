@@ -152,8 +152,13 @@ public class ComplexPathfinderTask implements PathfinderTask {
         }
 
         final String taskStatusInfo = (shouldCancelTask ? "cancelled" : "finished calculating");
-        log.debug("PathfinderTask done (" + taskStatusInfo + "). Routes total: " + totalRoutes + ", routes explored: "
-                + routesExplored + ". Path length: " + activeTask.getPath().getMovements().size());
+        if (activeTask != null && activeTask.getPath() != null) {
+            log.debug(String.format("PathfinderTask done (%s). Routes total: %d, routes explored: %d. Path length: %d",
+                    taskStatusInfo, totalRoutes, routesExplored, activeTask.getPath().getMovements().size()));
+        }
+        else {
+            log.debug(String.format("PathfinderTask done (%s). No route found!", taskStatusInfo));
+        }
     }
 
     private void waitForSectionPathfinderTaskCompletion() {

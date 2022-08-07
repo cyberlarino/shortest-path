@@ -1,17 +1,15 @@
 package shortestpath.pathfinder;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Point;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ClientInfoProvider;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.pathfindertask.PathfinderTask;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
-import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMap;
 import shortestpath.worldmap.WorldMapProvider;
-
-import java.awt.Point;
 
 @Slf4j
 public class PathfinderRequestHandler {
@@ -98,7 +96,6 @@ public class PathfinderRequestHandler {
         }
 
         activeTask = pathfinderTaskHandler.newTask(start, target);
-        log.debug("New PathfinderTask started: " + Util.worldPointToString(start) + " to " + Util.worldPointToString(target));
     }
 
     private final static int RADIUS_TO_CHECK = 10;
@@ -111,7 +108,7 @@ public class PathfinderRequestHandler {
             final Point direction = OrdinalDirection.CARDINAL_DIRECTIONS.get(cardinalDirectionIndex).toPoint();
 
             final int directionTraverseLength = Math.floorDiv(cardinalDirectionIterator, 2);
-            point = point.dx(direction.x * directionTraverseLength).dy(direction.y * directionTraverseLength);
+            point = point.dx(direction.getX() * directionTraverseLength).dy(direction.getY() * directionTraverseLength);
 
             if (!map.isBlocked(point)) {
                 return point;

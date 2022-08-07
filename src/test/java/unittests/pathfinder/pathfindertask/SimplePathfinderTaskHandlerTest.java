@@ -1,4 +1,4 @@
-package pathfinder;
+package unittests.pathfinder.pathfindertask;
 
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;

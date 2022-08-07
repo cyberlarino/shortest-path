@@ -7,14 +7,13 @@ import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.PathfinderRequestHandler;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
 import shortestpath.pathfinder.path.Transport;
-import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.utils.PathfinderUtil;
 import shortestpath.worldmap.WorldMapProvider;
 import shortestpath.worldmap.sections.SectionPathfinderTask;
 import shortestpath.worldmap.sections.SectionMapper;
 import shortestpath.worldmap.sections.SectionRoute;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class PathfinderTest {
     private static ClientInfoProvider clientInfoProvider;
@@ -41,7 +40,7 @@ public class PathfinderTest {
         final WorldPoint target = new WorldPoint(3089, 3523, 0);
 
         sectionPlanner = new SectionPathfinderTask(worldMapProvider.getWorldMap(), sectionMapper, start, target);
-        waitForPathfinderTaskCompletion(sectionPlanner);
+        PathfinderUtil.waitForTaskCompletion(sectionPlanner);
         List<SectionRoute> routes = sectionPlanner.getRoutes();
 
         for (final SectionRoute route : routes) {
@@ -56,16 +55,5 @@ public class PathfinderTest {
         // Pathfinder
         pathfinderTaskHandler = new PathfinderTaskHandler(configProvider, worldMapProvider, sectionMapper);
         pathfinderRequestHandler = new PathfinderRequestHandler(clientInfoProvider, worldMapProvider, pathfinderTaskHandler);
-    }
-
-    private static boolean waitForPathfinderTaskCompletion(final SectionPathfinderTask task) {
-        long startTime = System.nanoTime();
-        while (task.getStatus() == PathfinderTaskStatus.CALCULATING) {
-            try {
-                TimeUnit.MILLISECONDS.sleep(10);
-            } catch (Exception ignore) {
-            }
-        }
-        return true;
     }
 }
