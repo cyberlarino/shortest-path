@@ -42,15 +42,20 @@ public class SimplePathfinderTask implements PathfinderTask {
     private final Predicate<Transport> transportPredicate;
     private boolean shouldCancelTask = false;
 
+    public SimplePathfinderTask(final WorldMap worldMap, final WorldPoint start, final WorldPoint target,
+                                final PathfinderConfig config) {
+        this(worldMap, start, target, config, (x) -> true);
+    }
 
-    public SimplePathfinderTask(final WorldMap worldMap, final WorldPoint start, final WorldPoint target, final PathfinderConfig config) {
+    public SimplePathfinderTask(final WorldMap worldMap, final WorldPoint start, final WorldPoint target,
+                                final PathfinderConfig config, final Predicate<Transport> transportPredicate) {
         this.worldMap = worldMap;
         this.start = start;
         this.target = target;
 
         final boolean isStartOrTargetInWilderness = isInWilderness(start) || isInWilderness(target);
         this.neighborPredicate = (point) -> !config.avoidWilderness || isStartOrTargetInWilderness || !isInWilderness(point);
-        this.transportPredicate = config.getCanPlayerUseTransportPredicate();
+        this.transportPredicate = config.getCanPlayerUseTransportPredicate().and(transportPredicate);
 
         new Thread(this).start();
     }

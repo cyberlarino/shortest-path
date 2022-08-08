@@ -7,41 +7,53 @@ import shortestpath.pathfinder.path.Movement;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.worldmap.WorldMap;
+import shortestpath.worldmap.sections.MovementSections;
+import shortestpath.worldmap.sections.SectionMapper;
 import shortestpath.worldmap.sections.SectionRoute;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class PathfinderRouteTask implements PathfinderTask {
     @Getter
     private final SectionRoute route;
     private final WorldMap worldMap;
+    private final SectionMapper sectionMapper;
 
     private final List<SimplePathfinderTask> sectionTasks;
     private PathfinderTaskStatus status = PathfinderTaskStatus.CALCULATING;
     private Path finalPath = null;
 
-    public PathfinderRouteTask(final SectionRoute route, final WorldMap worldMap, final PathfinderConfig pathfinderConfig) {
+    public PathfinderRouteTask(final SectionRoute route, final WorldMap worldMap, final SectionMapper sectionMapper, final PathfinderConfig pathfinderConfig) {
         this.sectionTasks = new ArrayList<>();
         this.route = route;
         this.worldMap = worldMap;
+        this.sectionMapper = sectionMapper;
+
+        final BiFunction<WorldPoint, WorldPoint, SimplePathfinderTask> createTask = (start, target) -> {
+            return new SimplePathfinderTask(worldMap, start, target, pathfinderConfig, getTransportPredicate());
+        };
 
         if (route.getTransports().isEmpty()) {
-            sectionTasks.add(new SimplePathfinderTask(worldMap, route.getOrigin(), route.getDestination(), (x) -> false));
+            sectionTasks.add(createTask.apply(route.getOrigin(), route.getDestination()));
         } else {
             final Transport firstTransport = route.getTransports().get(0);
             final Transport lastTransport = route.getTransports().get(route.getTransports().size() - 1);
-            sectionTasks.add(new SimplePathfinderTask(worldMap, route.getOrigin(), firstTransport.getOrigin(), (x) -> false));
+            sectionTasks.add(createTask.apply(route.getOrigin(), firstTransport.getOrigin()));
 
             for (int i = 0; i < route.getTransports().size() - 1; ++i) {
                 final Transport currentTransport = route.getTransports().get(i);
                 final Transport nextTransport = route.getTransports().get(i + 1);
-                sectionTasks.add(new SimplePathfinderTask(worldMap, currentTransport.getDestination(), nextTransport.getOrigin(), (x) -> false));
+                sectionTasks.add(createTask.apply(currentTransport.getDestination(), nextTransport.getOrigin()));
             }
 
-            sectionTasks.add(new SimplePathfinderTask(worldMap, lastTransport.getDestination(), route.getDestination(), (x) -> false));
+            sectionTasks.add(createTask.apply(lastTransport.getDestination(), route.getDestination()));
         }
     }
 
@@ -106,5 +118,18 @@ public class PathfinderRouteTask implements PathfinderTask {
     }
 
     public void run() {
+    }
+
+    private Predicate<Transport> getTransportPredicate() {
+        return (transport) -> {
+            final MovementSections transportSections = sectionMapper.getSection(transport);
+            if (Objects.equals(transportSections.getOriginSection(), transportSections.getDestinationSection())) {
+               return true;
+            }
+            if (transport.getAgilityLevelRequired() != 0) {
+                return true;
+            }
+            return false;
+        };
     }
 }

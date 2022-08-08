@@ -30,6 +30,7 @@ public class ComplexPathfinderTask implements PathfinderTask {
 
     private final SectionPathfinderTask sectionPathfinderTask;
     private final WorldMap worldMap;
+    private final SectionMapper sectionMapper;
     private final PathfinderConfig pathfinderConfig;
 
     private int bestRouteLength = Integer.MAX_VALUE;
@@ -44,6 +45,7 @@ public class ComplexPathfinderTask implements PathfinderTask {
                                  final WorldPoint start,
                                  final WorldPoint target) {
         this.worldMap = worldMap;
+        this.sectionMapper = sectionMapper;
         this.pathfinderConfig = pathfinderConfig;
         this.start = start;
         this.target = target;
@@ -94,7 +96,7 @@ public class ComplexPathfinderTask implements PathfinderTask {
                 if (tasks.size() >= MAX_CONCURRENT_TASKS) {
                     break;
                 }
-                final PathfinderRouteTask routeTask = new PathfinderRouteTask(route, worldMap, pathfinderConfig);
+                final PathfinderRouteTask routeTask = new PathfinderRouteTask(route, worldMap, sectionMapper, pathfinderConfig);
                 routesToRemove.add(route);
                 tasks.add(routeTask);
                 ++routesExplored;
