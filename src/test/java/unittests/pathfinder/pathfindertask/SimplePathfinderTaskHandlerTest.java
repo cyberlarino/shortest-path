@@ -11,7 +11,7 @@ import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
 import shortestpath.pathfinder.pathfindertask.SimplePathfinderTask;
-import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
+import shortestpath.pathfinder.PathfinderTaskHandler;
 import shortestpath.pathfinder.path.Walk;
 import shortestpath.worldmap.WorldMapProvider;
 import shortestpath.worldmap.sections.SectionMapper;

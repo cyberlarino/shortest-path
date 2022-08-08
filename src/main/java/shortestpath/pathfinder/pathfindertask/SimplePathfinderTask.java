@@ -1,9 +1,5 @@
 package shortestpath.pathfinder.pathfindertask;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Predicate;
 
 import lombok.Getter;
@@ -12,7 +8,6 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.pathfinder.Node;
 import shortestpath.pathfinder.NodeGraph;
-import shortestpath.pathfinder.OrdinalDirection;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.path.Transport;

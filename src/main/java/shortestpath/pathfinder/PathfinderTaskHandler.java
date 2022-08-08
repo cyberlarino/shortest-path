@@ -1,4 +1,4 @@
-package shortestpath.pathfinder.pathfindertask;
+package shortestpath.pathfinder;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -7,6 +7,10 @@ import net.runelite.api.coords.WorldPoint;
 import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.path.Movement;
 import shortestpath.pathfinder.path.Path;
+import shortestpath.pathfinder.pathfindertask.ComplexPathfinderTask;
+import shortestpath.pathfinder.pathfindertask.PathfinderTask;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.pathfinder.pathfindertask.SimplePathfinderTask;
 import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 import shortestpath.worldmap.sections.SectionMapper;

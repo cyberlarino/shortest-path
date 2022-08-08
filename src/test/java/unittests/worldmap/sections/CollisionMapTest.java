@@ -2,20 +2,14 @@ package unittests.worldmap.sections;
 
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import shortestpath.pathfinder.OrdinalDirection;
-import shortestpath.utils.PathfinderUtil;
-import shortestpath.utils.wallfinder.Wall;
-import shortestpath.utils.wallfinder.WallFinder;
+import shortestpath.utils.OrdinalDirection;
 import shortestpath.worldmap.WorldMapProvider;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class CollisionMapTest {
     private static WorldMapProvider worldMapProvider = new WorldMapProvider();

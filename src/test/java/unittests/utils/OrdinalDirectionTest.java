@@ -1,4 +1,4 @@
-package unittests.pathfinder;
+package unittests.utils;
 
 import static org.junit.Assert.assertEquals;
 
@@ -7,7 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import shortestpath.pathfinder.OrdinalDirection;
+import shortestpath.utils.OrdinalDirection;
 import shortestpath.utils.wallfinder.Direction;
 
 import java.util.Arrays;

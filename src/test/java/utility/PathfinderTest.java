@@ -5,7 +5,7 @@ import org.mockito.Mockito;
 import shortestpath.ClientInfoProvider;
 import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.PathfinderRequestHandler;
-import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
+import shortestpath.pathfinder.PathfinderTaskHandler;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.utils.PathfinderUtil;
 import shortestpath.worldmap.WorldMapProvider;

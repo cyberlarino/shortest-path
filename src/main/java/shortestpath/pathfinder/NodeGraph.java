@@ -5,6 +5,7 @@ import net.runelite.api.coords.WorldPoint;
 import shortestpath.pathfinder.path.Movement;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.pathfinder.path.Walk;
+import shortestpath.utils.OrdinalDirection;
 import shortestpath.worldmap.WorldMap;
 
 import java.util.Arrays;

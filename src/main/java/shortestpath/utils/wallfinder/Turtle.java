@@ -3,7 +3,7 @@ package shortestpath.utils.wallfinder;
 import lombok.Getter;
 import net.runelite.api.Point;
 import net.runelite.api.coords.WorldPoint;
-import shortestpath.pathfinder.OrdinalDirection;
+import shortestpath.utils.OrdinalDirection;
 import shortestpath.worldmap.WorldMap;
 
 public class Turtle {

@@ -7,7 +7,7 @@ import shortestpath.ClientInfoProvider;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.pathfindertask.PathfinderTask;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
-import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
+import shortestpath.utils.OrdinalDirection;
 import shortestpath.worldmap.WorldMap;
 import shortestpath.worldmap.WorldMapProvider;
 

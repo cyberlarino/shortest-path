@@ -6,7 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import shortestpath.pathfinder.OrdinalDirection;
+import shortestpath.utils.OrdinalDirection;
 import shortestpath.utils.PathfinderUtil;
 import shortestpath.utils.wallfinder.Wall;
 import shortestpath.utils.wallfinder.WallFinder;

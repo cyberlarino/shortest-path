@@ -1,7 +1,6 @@
 package shortestpath.utils;
 
 import net.runelite.api.coords.WorldPoint;
-import shortestpath.pathfinder.OrdinalDirection;
 import shortestpath.pathfinder.path.Movement;
 import shortestpath.pathfinder.path.MovementType;
 import shortestpath.pathfinder.path.Path;

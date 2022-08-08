@@ -4,10 +4,8 @@ import net.runelite.api.Point;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ShortestPathPlugin;
 import shortestpath.utils.Util;
-import shortestpath.pathfinder.OrdinalDirection;
+import shortestpath.utils.OrdinalDirection;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;

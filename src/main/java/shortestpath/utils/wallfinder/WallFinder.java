@@ -1,8 +1,7 @@
 package shortestpath.utils.wallfinder;
 
 import net.runelite.api.coords.WorldPoint;
-import org.graalvm.compiler.core.phases.EconomyLowTier;
-import shortestpath.pathfinder.OrdinalDirection;
+import shortestpath.utils.OrdinalDirection;
 import shortestpath.worldmap.WorldMap;
 
 import javax.annotation.Nullable;

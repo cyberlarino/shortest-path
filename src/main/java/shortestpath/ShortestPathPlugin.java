@@ -30,7 +30,7 @@ import shortestpath.pathfinder.PathfinderRequestHandler;
 import shortestpath.overlays.PathMapOverlay;
 import shortestpath.overlays.PathMinimapOverlay;
 import shortestpath.overlays.PathTileOverlay;
-import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
+import shortestpath.pathfinder.PathfinderTaskHandler;
 import shortestpath.pathfinder.path.Movement;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.worldmap.WorldMapProvider;

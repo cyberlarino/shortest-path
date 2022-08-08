@@ -2,7 +2,7 @@ package shortestpath.worldmap;
 
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.pathfinder.Node;
-import shortestpath.pathfinder.OrdinalDirection;
+import shortestpath.utils.OrdinalDirection;
 import shortestpath.pathfinder.path.Transport;
 
 import java.util.ArrayList;

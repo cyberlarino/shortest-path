@@ -14,10 +14,9 @@ import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.PathfinderRequestHandler;
 import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
 import shortestpath.pathfinder.pathfindertask.SimplePathfinderTask;
-import shortestpath.pathfinder.pathfindertask.PathfinderTaskHandler;
+import shortestpath.pathfinder.PathfinderTaskHandler;
 import shortestpath.pathfinder.path.Walk;
 import shortestpath.utils.PathfinderUtil;
-import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 
 import java.util.Arrays;
