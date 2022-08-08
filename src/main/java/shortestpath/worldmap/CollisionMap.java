@@ -2,6 +2,7 @@ package shortestpath.worldmap;
 
 import net.runelite.api.Point;
 import net.runelite.api.coords.WorldPoint;
+import shortestpath.ShortestPathPlugin;
 import shortestpath.utils.Util;
 import shortestpath.pathfinder.OrdinalDirection;
 
@@ -71,10 +72,7 @@ public class CollisionMap extends SplitFlagMap {
 
     public static CollisionMap fromFile(final Path filepath) {
         Map<SplitFlagMap.Position, byte[]> compressedRegions = new HashMap<>();
-        try (FileInputStream fis = new FileInputStream(filepath.toString())) {
-            BufferedInputStream bis = new BufferedInputStream(fis);
-            ZipInputStream in = new ZipInputStream(bis);
-
+        try (ZipInputStream in = new ZipInputStream(ShortestPathPlugin.class.getResourceAsStream(Util.pathToResourcePath(filepath)))) {
             ZipEntry entry;
             while ((entry = in.getNextEntry()) != null) {
                 String[] n = entry.getName().split("_");

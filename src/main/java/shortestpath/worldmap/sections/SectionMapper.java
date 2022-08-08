@@ -8,6 +8,7 @@ import shortestpath.pathfinder.Node;
 import shortestpath.pathfinder.NodeGraph;
 import shortestpath.pathfinder.path.Movement;
 import shortestpath.pathfinder.path.Transport;
+import shortestpath.utils.Util;
 import shortestpath.worldmap.WorldMapProvider;
 
 import javax.annotation.Nullable;
@@ -134,7 +135,7 @@ public class SectionMapper {
 
     public static SectionMapper fromFile(final Path filepath, final WorldMapProvider worldMapProvider) {
         List<Set<WorldPoint>> sections = null;
-        try (final ZipInputStream inputStream = new ZipInputStream(Files.newInputStream(filepath))) {
+        try (final ZipInputStream inputStream = new ZipInputStream(SectionMapper.class.getResourceAsStream(Util.pathToResourcePath(filepath)))) {
             ZipEntry zipEntry;
             while ((zipEntry = inputStream.getNextEntry()) != null) {
                 if (SECTIONS_ZIP_ENTRY.getName().equals(zipEntry.getName())) {

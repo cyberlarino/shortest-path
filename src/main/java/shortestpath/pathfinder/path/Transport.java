@@ -3,8 +3,10 @@ package shortestpath.pathfinder.path;
 import lombok.Getter;
 import lombok.Value;
 import net.runelite.api.coords.WorldPoint;
+import shortestpath.utils.Util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -97,9 +99,9 @@ public class Transport implements Movement {
     public static Map<WorldPoint, List<Transport>> fromFile(final Path filepath) {
         HashMap<WorldPoint, List<Transport>> transports = new HashMap<>();
         try {
-            byte[] encoded = Files.readAllBytes(filepath);
-            String s = new String(encoded, StandardCharsets.UTF_8);
-            Scanner scanner = new Scanner(s);
+            final InputStream inputStream = Transport.class.getResourceAsStream(Util.pathToResourcePath(filepath));
+            final String fileContent = new String(Util.readAllBytes(inputStream), StandardCharsets.UTF_8);
+            Scanner scanner = new Scanner(fileContent);
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
 
