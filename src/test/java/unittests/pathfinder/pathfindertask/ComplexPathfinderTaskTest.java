@@ -53,6 +53,7 @@ public class ComplexPathfinderTaskTest {
     }
 
     @Test
+    @Ignore
     public void pathTest_GrandExchange() {
         final WorldPoint start = new WorldPoint(2979, 3819, 0);
         final WorldPoint target = new WorldPoint(2854, 3969, 0);
