@@ -7,15 +7,10 @@ import shortestpath.ConfigProvider;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.PathfinderRequestHandler;
 import shortestpath.pathfinder.PathfinderTaskHandler;
-import shortestpath.pathfinder.path.Transport;
 import shortestpath.pathfinder.pathfindertask.ComplexPathfinderTask;
 import shortestpath.utils.PathfinderUtil;
 import shortestpath.worldmap.WorldMapProvider;
-import shortestpath.worldmap.sections.SectionPathfinderTask;
 import shortestpath.worldmap.sections.SectionMapper;
-import shortestpath.worldmap.sections.SectionRoute;
-
-import java.util.List;
 
 public class PathfinderTest {
     // Plugin

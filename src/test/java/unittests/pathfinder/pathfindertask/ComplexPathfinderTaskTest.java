@@ -3,6 +3,7 @@ package unittests.pathfinder.pathfindertask;
 import net.runelite.api.coords.WorldPoint;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.path.Path;
@@ -100,6 +101,7 @@ public class ComplexPathfinderTaskTest {
     }
 
     @Test
+    @Ignore
     public void pathTest_WildernessLeverUsed() {
         // Set-up, find Edgeville Wilderness Lever transport
         final WorldPoint boundaryCorner = new WorldPoint(3087, 3477, 0);
