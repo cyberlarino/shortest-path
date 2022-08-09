@@ -5,7 +5,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ConfigProvider;
-import shortestpath.pathfinder.path.Movement;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.pathfindertask.ComplexPathfinderTask;
 import shortestpath.pathfinder.pathfindertask.PathfinderTask;

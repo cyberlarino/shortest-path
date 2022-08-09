@@ -9,6 +9,7 @@ import net.runelite.api.coords.WorldPoint;
 import shortestpath.pathfinder.Node;
 import shortestpath.pathfinder.NodeGraph;
 import shortestpath.pathfinder.PathfinderConfig;
+import shortestpath.pathfinder.PathfinderTaskHandler;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.path.Transport;
 import shortestpath.worldmap.WorldMap;
@@ -30,7 +31,6 @@ public class SimplePathfinderTask implements PathfinderTask {
     private Path path;
     @Getter
     private PathfinderTaskStatus status = PathfinderTaskStatus.CALCULATING;
-    private final long visitedNodes = 0;
 
     private final WorldMap worldMap;
     private final Predicate<WorldPoint> neighborPredicate;

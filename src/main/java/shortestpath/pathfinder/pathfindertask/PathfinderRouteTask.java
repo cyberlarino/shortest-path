@@ -3,6 +3,7 @@ package shortestpath.pathfinder.pathfindertask;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.pathfinder.PathfinderConfig;
+import shortestpath.pathfinder.PathfinderTaskCache;
 import shortestpath.pathfinder.path.Movement;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.path.Transport;
@@ -16,8 +17,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class PathfinderRouteTask implements PathfinderTask {
@@ -25,35 +24,39 @@ public class PathfinderRouteTask implements PathfinderTask {
     private final SectionRoute route;
     private final WorldMap worldMap;
     private final SectionMapper sectionMapper;
+    private final PathfinderTaskCache pathfinderTaskCache;
 
     private final List<SimplePathfinderTask> sectionTasks;
+    private final PathfinderConfig pathfinderConfig;
     private PathfinderTaskStatus status = PathfinderTaskStatus.CALCULATING;
     private Path finalPath = null;
 
     public PathfinderRouteTask(final SectionRoute route, final WorldMap worldMap, final SectionMapper sectionMapper, final PathfinderConfig pathfinderConfig) {
+        this(route, worldMap, sectionMapper, pathfinderConfig, null);
+    }
+
+    public PathfinderRouteTask(final SectionRoute route, final WorldMap worldMap, final SectionMapper sectionMapper, final PathfinderConfig pathfinderConfig, final PathfinderTaskCache pathfinderTaskCache) {
         this.sectionTasks = new ArrayList<>();
         this.route = route;
         this.worldMap = worldMap;
         this.sectionMapper = sectionMapper;
-
-        final BiFunction<WorldPoint, WorldPoint, SimplePathfinderTask> createTask = (start, target) -> {
-            return new SimplePathfinderTask(worldMap, start, target, pathfinderConfig, getTransportPredicate());
-        };
+        this.pathfinderConfig = pathfinderConfig;
+        this.pathfinderTaskCache = pathfinderTaskCache;
 
         if (route.getTransports().isEmpty()) {
-            sectionTasks.add(createTask.apply(route.getOrigin(), route.getDestination()));
+            sectionTasks.add(createTask(route.getOrigin(), route.getDestination()));
         } else {
             final Transport firstTransport = route.getTransports().get(0);
             final Transport lastTransport = route.getTransports().get(route.getTransports().size() - 1);
-            sectionTasks.add(createTask.apply(route.getOrigin(), firstTransport.getOrigin()));
+            sectionTasks.add(createTask(route.getOrigin(), firstTransport.getOrigin()));
 
             for (int i = 0; i < route.getTransports().size() - 1; ++i) {
                 final Transport currentTransport = route.getTransports().get(i);
                 final Transport nextTransport = route.getTransports().get(i + 1);
-                sectionTasks.add(createTask.apply(currentTransport.getDestination(), nextTransport.getOrigin()));
+                sectionTasks.add(createTask(currentTransport.getDestination(), nextTransport.getOrigin()));
             }
 
-            sectionTasks.add(createTask.apply(lastTransport.getDestination(), route.getDestination()));
+            sectionTasks.add(createTask(lastTransport.getDestination(), route.getDestination()));
         }
     }
 
@@ -106,6 +109,13 @@ public class PathfinderRouteTask implements PathfinderTask {
 
             final Path path = new Path(movements);
             if (status == PathfinderTaskStatus.DONE || status == PathfinderTaskStatus.CANCELLED) {
+                if (pathfinderTaskCache != null) {
+                    for (final SimplePathfinderTask task : sectionTasks) {
+                        if (task.getStatus() == PathfinderTaskStatus.DONE) {
+                            pathfinderTaskCache.addTask(task);
+                        }
+                    }
+                }
                 finalPath = path;
             }
             return path;
@@ -120,11 +130,23 @@ public class PathfinderRouteTask implements PathfinderTask {
     public void run() {
     }
 
+    private SimplePathfinderTask createTask(final WorldPoint start, final WorldPoint target) {
+        if (pathfinderTaskCache != null) {
+            final SimplePathfinderTask cachedTask = (SimplePathfinderTask) pathfinderTaskCache.getCachedTask(start, target);
+            if (cachedTask != null) {
+                return cachedTask;
+            }
+        }
+
+        final SimplePathfinderTask newTask = new SimplePathfinderTask(worldMap, start, target, pathfinderConfig, getTransportPredicate());
+        return newTask;
+    }
+
     private Predicate<Transport> getTransportPredicate() {
         return (transport) -> {
             final MovementSections transportSections = sectionMapper.getSection(transport);
             if (Objects.equals(transportSections.getOriginSection(), transportSections.getDestinationSection())) {
-               return true;
+                return true;
             }
             if (transport.getAgilityLevelRequired() != 0) {
                 return true;

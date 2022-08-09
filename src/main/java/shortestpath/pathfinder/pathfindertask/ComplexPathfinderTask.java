@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.pathfinder.PathfinderConfig;
+import shortestpath.pathfinder.PathfinderTaskCache;
 import shortestpath.pathfinder.path.Path;
 import shortestpath.worldmap.WorldMap;
 import shortestpath.worldmap.sections.SectionMapper;
@@ -15,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
@@ -32,6 +32,7 @@ public class ComplexPathfinderTask implements PathfinderTask {
     private final WorldMap worldMap;
     private final SectionMapper sectionMapper;
     private final PathfinderConfig pathfinderConfig;
+    private final PathfinderTaskCache pathfinderTaskCache;
 
     private int bestRouteLength = Integer.MAX_VALUE;
     private boolean updatingTasks = false;
@@ -50,6 +51,7 @@ public class ComplexPathfinderTask implements PathfinderTask {
         this.start = start;
         this.target = target;
 
+        this.pathfinderTaskCache = new PathfinderTaskCache();
         this.sectionPathfinderTask = new SectionPathfinderTask(worldMap, sectionMapper, start, target, pathfinderConfig.getCanPlayerUseTransportPredicate());
         new Thread(this).start();
     }
@@ -96,7 +98,7 @@ public class ComplexPathfinderTask implements PathfinderTask {
                 if (tasks.size() >= MAX_CONCURRENT_TASKS) {
                     break;
                 }
-                final PathfinderRouteTask routeTask = new PathfinderRouteTask(route, worldMap, sectionMapper, pathfinderConfig);
+                final PathfinderRouteTask routeTask = new PathfinderRouteTask(route, worldMap, sectionMapper, pathfinderConfig, pathfinderTaskCache);
                 routesToRemove.add(route);
                 tasks.add(routeTask);
                 ++routesExplored;
