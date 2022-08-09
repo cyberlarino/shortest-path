@@ -6,7 +6,6 @@ import net.runelite.api.Client;
 import net.runelite.api.KeyCode;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
-import net.runelite.api.Player;
 import net.runelite.api.Point;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
@@ -28,20 +27,19 @@ import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.Text;
 import shortestpath.pathfinder.PathfinderRequestHandler;
-import shortestpath.pathfinder.PathfinderTask;
 import shortestpath.overlays.PathMapOverlay;
 import shortestpath.overlays.PathMinimapOverlay;
 import shortestpath.overlays.PathTileOverlay;
-import shortestpath.pathfinder.PathfinderTaskGenerator;
 import shortestpath.pathfinder.PathfinderTaskHandler;
-import shortestpath.worldmap.Transport;
+import shortestpath.pathfinder.path.Movement;
+import shortestpath.pathfinder.path.Transport;
 import shortestpath.worldmap.WorldMapProvider;
+import shortestpath.worldmap.sections.SectionMapper;
 
 import java.awt.Shape;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -93,8 +91,8 @@ public class ShortestPathPlugin extends Plugin {
     private ClientInfoProvider clientInfoProvider;
     private ConfigProvider configProvider;
     private WorldMapProvider worldMapProvider;
+    private SectionMapper sectionMapper;
     private PathfinderTaskHandler pathfinderTaskHandler;
-    private PathfinderTaskGenerator pathfinderTaskGenerator;
     private PathfinderRequestHandler pathfinderRequestHandler;
 
     @Override
@@ -104,10 +102,11 @@ public class ShortestPathPlugin extends Plugin {
         this.configProvider = new ConfigProvider(config, clientInfoProvider);
         this.worldMapProvider = new WorldMapProvider();
 
+        this.sectionMapper = SectionMapper.fromFile(worldMapProvider);
+
         // Pathfinder
-        this.pathfinderTaskHandler = new PathfinderTaskHandler(configProvider);
-        this.pathfinderTaskGenerator = new PathfinderTaskGenerator(configProvider, worldMapProvider, pathfinderTaskHandler);
-        this.pathfinderRequestHandler = new PathfinderRequestHandler(clientInfoProvider, worldMapProvider, pathfinderTaskGenerator);
+        this.pathfinderTaskHandler = new PathfinderTaskHandler(configProvider, worldMapProvider, sectionMapper);
+        this.pathfinderRequestHandler = new PathfinderRequestHandler(clientInfoProvider, worldMapProvider, pathfinderTaskHandler);
 
         // Overlays
         this.pathOverlay = new PathTileOverlay(client, pathfinderRequestHandler, worldMapProvider, configProvider);
@@ -127,12 +126,12 @@ public class ShortestPathPlugin extends Plugin {
     }
 
     public boolean isNearPath(WorldPoint location) {
-        if (!pathfinderRequestHandler.hasActivePath() || pathfinderRequestHandler.getActivePath().getPoints().isEmpty()) {
+        if (!pathfinderRequestHandler.hasActivePath() || pathfinderRequestHandler.getActivePath().getMovements().isEmpty()) {
             return true;
         }
 
-        for (final WorldPoint point : pathfinderRequestHandler.getActivePath().getPoints()) {
-            if (config.recalculateDistance() < 0 || location.distanceTo2D(point) < config.recalculateDistance()) {
+        for (final Movement movement : pathfinderRequestHandler.getActivePath().getMovements()) {
+            if (config.recalculateDistance() < 0 || location.distanceTo2D(movement.getDestination()) < config.recalculateDistance()) {
                 return true;
             }
         }
@@ -173,8 +172,8 @@ public class ShortestPathPlugin extends Plugin {
                 addMenuEntry(event, SET, START, 1);
 
                 final WorldPoint selectedTile = getSelectedWorldPoint();
-                for (final WorldPoint tile : pathfinderRequestHandler.getActivePath().getPoints()) {
-                    if (tile.equals(selectedTile)) {
+                for (final Movement movements : pathfinderRequestHandler.getActivePath().getMovements()) {
+                    if (movements.getDestination().equals(selectedTile)) {
                         addMenuEntry(event, CLEAR, PATH, 1);
                         break;
                     }
@@ -211,8 +210,8 @@ public class ShortestPathPlugin extends Plugin {
                     currentLocation.getX() + " " + currentLocation.getY() + " " + currentLocation.getPlane() + " " +
                     lastClick.getOption() + " " + Text.removeTags(lastClick.getTarget()) + " " + lastClick.getIdentifier()
             );
-            Transport transport = new Transport(transportStart, transportEnd);
-            worldMapProvider.getTransports().computeIfAbsent(transportStart, k -> new ArrayList<>()).add(transport);
+            final Transport transport = new Transport(transportStart, transportEnd);
+            worldMapProvider.getWorldMap().addTransport(transport);
         }
 
         if (entry.getOption().equals("Copy Position")) {

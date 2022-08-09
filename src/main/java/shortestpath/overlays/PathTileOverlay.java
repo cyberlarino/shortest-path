@@ -16,11 +16,12 @@ import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayPriority;
 import shortestpath.ConfigProvider;
-import shortestpath.pathfinder.OrdinalDirection;
-import shortestpath.pathfinder.Path;
+import shortestpath.utils.OrdinalDirection;
+import shortestpath.pathfinder.path.Movement;
+import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.PathfinderRequestHandler;
-import shortestpath.worldmap.CollisionMap;
-import shortestpath.worldmap.Transport;
+import shortestpath.pathfinder.path.Transport;
+import shortestpath.worldmap.WorldMap;
 import shortestpath.worldmap.WorldMapProvider;
 
 public class PathTileOverlay extends Overlay {
@@ -44,34 +45,29 @@ public class PathTileOverlay extends Overlay {
     }
 
     private void renderTransports(Graphics2D graphics) {
-        for (WorldPoint a : worldMapProvider.getTransports().keySet()) {
-            drawTile(graphics, a, configProvider.colorTransports(), -1);
+        for (Transport transport : worldMapProvider.getWorldMap().getTransports()) {
+            final WorldPoint transportDestination = transport.getDestination();
+            final WorldPoint transportOrigin = transport.getOrigin();
 
-            Point ca = tileCenter(a);
+            drawTile(graphics, transportDestination, configProvider.colorTransports(), -1);
 
-            if (ca == null) {
+            final Point centerDestination = tileCenter(transportDestination);
+            final Point centerOrigin = tileCenter(transportOrigin);
+            if (centerOrigin == null || centerDestination == null) {
                 continue;
             }
+            graphics.drawLine(centerOrigin.x, centerOrigin.y, centerDestination.x, centerDestination.y);
 
-            for (Transport b : worldMapProvider.getTransports().get(a)) {
-                Point cb = tileCenter(b.getOrigin());
-                if (cb != null) {
-                    graphics.drawLine(ca.x, ca.y, cb.x, cb.y);
-                }
-            }
-
-            StringBuilder s = new StringBuilder();
-            for (Transport b : worldMapProvider.getTransports().get(a)) {
-                if (b.getOrigin().getPlane() > a.getPlane()) {
-                    s.append("+");
-                } else if (b.getOrigin().getPlane() < a.getPlane()) {
-                    s.append("-");
-                } else {
-                    s.append("=");
-                }
+            final StringBuilder s = new StringBuilder();
+            if (transportOrigin.getPlane() > transportDestination.getPlane()) {
+                s.append("+");
+            } else if (transportOrigin.getPlane() < transportDestination.getPlane()) {
+                s.append("-");
+            } else {
+                s.append("=");
             }
             graphics.setColor(Color.WHITE);
-            graphics.drawString(s.toString(), ca.x, ca.y);
+            graphics.drawString(s.toString(), centerDestination.x, centerDestination.y);
         }
     }
 
@@ -88,7 +84,7 @@ public class PathTileOverlay extends Overlay {
                 }
 
                 final WorldPoint worldPoint = tile.getWorldLocation();
-                final CollisionMap map = worldMapProvider.getCollisionMap();
+                final WorldMap map = worldMapProvider.getWorldMap();
                 final String s = (!map.checkDirection(worldPoint, OrdinalDirection.NORTH) ? "n" : "") +
                         (!map.checkDirection(worldPoint, OrdinalDirection.SOUTH) ? "s" : "") +
                         (!map.checkDirection(worldPoint, OrdinalDirection.EAST) ? "e" : "") +
@@ -135,8 +131,8 @@ public class PathTileOverlay extends Overlay {
 
             final Path path = pathfinderRequestHandler.getActivePath();
             int counter = 0;
-            for (WorldPoint point : path.getPoints()) {
-                drawTile(graphics, point, color, counter++);
+            for (Movement movement : path.getMovements()) {
+                drawTile(graphics, movement.getDestination(), color, counter++);
             }
         }
 
@@ -183,7 +179,7 @@ public class PathTileOverlay extends Overlay {
 
         if (counter >= 0 && !TileCounter.DISABLED.equals(configProvider.showTileCounter())) {
             if (TileCounter.REMAINING.equals(configProvider.showTileCounter())) {
-                counter = pathfinderRequestHandler.getActivePath().getPoints().size() - counter - 1;
+                counter = pathfinderRequestHandler.getActivePath().getMovements().size() - counter - 1;
             }
             String counterText = Integer.toString(counter);
             graphics.setColor(Color.WHITE);

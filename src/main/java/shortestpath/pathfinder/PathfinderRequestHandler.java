@@ -1,20 +1,21 @@
 package shortestpath.pathfinder;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Point;
 import net.runelite.api.coords.WorldPoint;
 import shortestpath.ClientInfoProvider;
-import shortestpath.utils.Util;
-import shortestpath.worldmap.CollisionMap;
+import shortestpath.pathfinder.path.Path;
+import shortestpath.pathfinder.pathfindertask.PathfinderTask;
+import shortestpath.pathfinder.pathfindertask.PathfinderTaskStatus;
+import shortestpath.utils.OrdinalDirection;
+import shortestpath.worldmap.WorldMap;
 import shortestpath.worldmap.WorldMapProvider;
-
-import javax.annotation.Nullable;
-import java.awt.Point;
 
 @Slf4j
 public class PathfinderRequestHandler {
     private final ClientInfoProvider clientInfoProvider;
     private final WorldMapProvider worldMapProvider;
-    private final PathfinderTaskGenerator pathfinderTaskGenerator;
+    final PathfinderTaskHandler pathfinderTaskHandler;
 
     private PathfinderTask activeTask = null;
     private WorldPoint start = null;
@@ -23,10 +24,10 @@ public class PathfinderRequestHandler {
 
     public PathfinderRequestHandler(final ClientInfoProvider clientInfoProvider,
                                     final WorldMapProvider worldMapProvider,
-                                    final PathfinderTaskGenerator pathfinderTaskGenerator) {
+                                    final PathfinderTaskHandler pathfinderTaskHandler) {
         this.clientInfoProvider = clientInfoProvider;
         this.worldMapProvider = worldMapProvider;
-        this.pathfinderTaskGenerator = pathfinderTaskGenerator;
+        this.pathfinderTaskHandler = pathfinderTaskHandler;
     }
 
     public void setTarget(final WorldPoint target) {
@@ -70,7 +71,11 @@ public class PathfinderRequestHandler {
     }
 
     public boolean isActivePathDone() {
-        return (activeTask == null ? true : activeTask.isDone());
+        if (activeTask == null) {
+            return true;
+        }
+
+        return activeTask.getStatus() != PathfinderTaskStatus.CALCULATING;
     }
 
     private void updatePath() {
@@ -86,13 +91,16 @@ public class PathfinderRequestHandler {
             return;
         }
 
-        activeTask = pathfinderTaskGenerator.generate(start, target);
-        log.debug("New PathfinderTask started: " + Util.worldPointToString(start) + " to " + Util.worldPointToString(target));
+        if (activeTask != null && activeTask.getStatus() != PathfinderTaskStatus.DONE) {
+            activeTask.cancelTask();
+        }
+
+        activeTask = pathfinderTaskHandler.newTask(start, target);
     }
 
     private final static int RADIUS_TO_CHECK = 10;
     private WorldPoint findClosestNonBlockedPoint(WorldPoint point) {
-        final CollisionMap map = worldMapProvider.getCollisionMap();
+        final WorldMap map = worldMapProvider.getWorldMap();
 
         int cardinalDirectionIterator = 0;
         for (int radius = 1; radius < RADIUS_TO_CHECK; ++cardinalDirectionIterator) {
@@ -100,7 +108,7 @@ public class PathfinderRequestHandler {
             final Point direction = OrdinalDirection.CARDINAL_DIRECTIONS.get(cardinalDirectionIndex).toPoint();
 
             final int directionTraverseLength = Math.floorDiv(cardinalDirectionIterator, 2);
-            point = point.dx(direction.x * directionTraverseLength).dy(direction.y * directionTraverseLength);
+            point = point.dx(direction.getX() * directionTraverseLength).dy(direction.getY() * directionTraverseLength);
 
             if (!map.isBlocked(point)) {
                 return point;

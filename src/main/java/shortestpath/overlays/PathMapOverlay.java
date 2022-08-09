@@ -1,7 +1,5 @@
 package shortestpath.overlays;
 
-import com.google.inject.Inject;
-
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
@@ -20,9 +18,10 @@ import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
 import shortestpath.ClientInfoProvider;
 import shortestpath.ConfigProvider;
-import shortestpath.pathfinder.Path;
+import shortestpath.pathfinder.path.Movement;
+import shortestpath.pathfinder.path.Path;
 import shortestpath.pathfinder.PathfinderRequestHandler;
-import shortestpath.worldmap.Transport;
+import shortestpath.pathfinder.path.Transport;
 import shortestpath.worldmap.WorldMapProvider;
 
 public class PathMapOverlay extends Overlay {
@@ -36,11 +35,11 @@ public class PathMapOverlay extends Overlay {
     private Area mapClipArea;
 
     public PathMapOverlay(final Client client,
-                   final WorldMapOverlay worldMapOverlay,
-                   final ClientInfoProvider clientInfoProvider,
-                   final PathfinderRequestHandler pathfinderRequestHandler,
-                   final WorldMapProvider worldMapProvider,
-                   final ConfigProvider configProvider) {
+                          final WorldMapOverlay worldMapOverlay,
+                          final ClientInfoProvider clientInfoProvider,
+                          final PathfinderRequestHandler pathfinderRequestHandler,
+                          final WorldMapProvider worldMapProvider,
+                          final ConfigProvider configProvider) {
         this.client = client;
         this.worldMapOverlay = worldMapOverlay;
         this.clientInfoProvider = clientInfoProvider;
@@ -74,7 +73,7 @@ public class PathMapOverlay extends Overlay {
             for (int x = extent.x; x < (extent.x + extent.width + 1); x++) {
                 for (int y = extent.y - extent.height; y < (extent.y + 1); y++) {
                     WorldPoint point = new WorldPoint(x, y, z);
-                    if (worldMapProvider.getCollisionMap().isBlocked(point)) {
+                    if (worldMapProvider.getWorldMap().isBlocked(point)) {
                         drawOnMap(graphics, point);
                     }
                 }
@@ -83,20 +82,15 @@ public class PathMapOverlay extends Overlay {
 
         if (configProvider.drawTransports()) {
             graphics.setColor(Color.WHITE);
-            for (WorldPoint a : worldMapProvider.getTransports().keySet()) {
-                Point mapA = worldMapOverlay.mapWorldPointToGraphicsPoint(a);
-                if (mapA == null) {
+            for (Transport transport : worldMapProvider.getWorldMap().getTransports()) {
+                Point transportOrigin = worldMapOverlay.mapWorldPointToGraphicsPoint(transport.getOrigin());
+                Point transportDestination = worldMapOverlay.mapWorldPointToGraphicsPoint(transport.getDestination());
+
+                if (transportOrigin == null || transportDestination == null) {
                     continue;
                 }
-
-                for (Transport b : worldMapProvider.getTransports().get(a)) {
-                    Point mapB = worldMapOverlay.mapWorldPointToGraphicsPoint(b.getOrigin());
-                    if (mapB == null) {
-                        continue;
-                    }
-
-                    graphics.drawLine(mapA.getX(), mapA.getY(), mapB.getX(), mapB.getY());
-                }
+                graphics.drawLine(transportOrigin.getX(), transportOrigin.getY(),
+                        transportDestination.getX(), transportDestination.getY());
             }
         }
 
@@ -105,8 +99,8 @@ public class PathMapOverlay extends Overlay {
             graphics.setColor(done ? configProvider.colorPath() : configProvider.colorPathCalculating());
             final Path path = pathfinderRequestHandler.getActivePath();
             if (path != null) {
-                for (WorldPoint point : path.getPoints()) {
-                    drawOnMap(graphics, point);
+                for (Movement movement : path.getMovements()) {
+                    drawOnMap(graphics, movement.getDestination());
                 }
             }
         }

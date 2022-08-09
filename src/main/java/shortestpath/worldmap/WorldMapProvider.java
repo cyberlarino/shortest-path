@@ -2,7 +2,7 @@ package shortestpath.worldmap;
 
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.WorldListLoad;
+import shortestpath.pathfinder.path.Transport;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,13 +24,5 @@ public class WorldMapProvider {
         final CollisionMap map = CollisionMap.fromFile(collisionMapPath);
         final Map<WorldPoint, List<Transport>> transports = Transport.fromFile(transportsPath);
         this.worldMap = new WorldMap(map, transports);
-    }
-
-    public CollisionMap getCollisionMap() {
-        return worldMap.getCollisionMap();
-    }
-
-    public Map<WorldPoint, List<Transport>> getTransports() {
-        return worldMap.getTransports();
     }
 }

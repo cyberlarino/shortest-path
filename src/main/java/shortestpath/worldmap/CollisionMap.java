@@ -1,12 +1,11 @@
 package shortestpath.worldmap;
 
+import net.runelite.api.Point;
 import net.runelite.api.coords.WorldPoint;
+import shortestpath.ShortestPathPlugin;
 import shortestpath.utils.Util;
-import shortestpath.pathfinder.OrdinalDirection;
+import shortestpath.utils.OrdinalDirection;
 
-import java.awt.Point;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -27,19 +26,19 @@ public class CollisionMap extends SplitFlagMap {
 
     public boolean checkDirection(int x, int y, final int z, final OrdinalDirection dir) {
         Point direction = dir.toPoint();
-        if (Math.abs(direction.x) + Math.abs(direction.y) > 1) {
+        if (Math.abs(direction.getX()) + Math.abs(direction.getY()) > 1) {
             // Diagonal cases, check that both WorldPoint traversals possible. For example:
             // To go South-East, either:
             //  (current_tile to South) -> (south_tile to East)
             //  (current_tile to East) -> (east_tile to South)
             final boolean horizontalPossible =
-                    checkDirection(x, y, z, OrdinalDirection.fromPoint(new Point(direction.x, 0))) &&
-                    checkDirection(x + direction.x, y, z, OrdinalDirection.fromPoint(new Point(0, direction.y)));
+                    checkDirection(x, y, z, OrdinalDirection.fromPoint(new Point(direction.getX(), 0))) &&
+                    checkDirection(x + direction.getX(), y, z, OrdinalDirection.fromPoint(new Point(0, direction.getY())));
 
             final boolean verticalPossible =
-                    checkDirection(x, y, z, OrdinalDirection.fromPoint(new Point(0, direction.y))) &&
-                    checkDirection(x, y + direction.y, z, OrdinalDirection.fromPoint(new Point(direction.x, 0)));
-            if (!horizontalPossible && !verticalPossible) {
+                    checkDirection(x, y, z, OrdinalDirection.fromPoint(new Point(0, direction.getY()))) &&
+                    checkDirection(x, y + direction.getY(), z, OrdinalDirection.fromPoint(new Point(direction.getX(), 0)));
+            if (!(horizontalPossible && verticalPossible)) {
                 return false;
             }
         }
@@ -59,6 +58,9 @@ public class CollisionMap extends SplitFlagMap {
     }
 
     public boolean isBlocked(final WorldPoint point) {
+        if (point == null) {
+            return true;
+        }
         return isBlocked(point.getX(), point.getY(), point.getPlane());
     }
 
@@ -68,10 +70,7 @@ public class CollisionMap extends SplitFlagMap {
 
     public static CollisionMap fromFile(final Path filepath) {
         Map<SplitFlagMap.Position, byte[]> compressedRegions = new HashMap<>();
-        try (FileInputStream fis = new FileInputStream(filepath.toString())) {
-            BufferedInputStream bis = new BufferedInputStream(fis);
-            ZipInputStream in = new ZipInputStream(bis);
-
+        try (ZipInputStream in = new ZipInputStream(ShortestPathPlugin.class.getResourceAsStream(Util.pathToResourcePath(filepath)))) {
             ZipEntry entry;
             while ((entry = in.getNextEntry()) != null) {
                 String[] n = entry.getName().split("_");
